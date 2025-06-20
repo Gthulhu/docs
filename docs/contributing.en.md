@@ -15,6 +15,8 @@ Please follow our code of conduct when participating in the project:
 
 ### Ways to Contribute
 
+Before starting to contribute, we recommend reading the [Development History](development-history.en.md) to understand the project's technical background and challenges encountered.
+
 You can contribute to the project in various ways:
 
 ```mermaid

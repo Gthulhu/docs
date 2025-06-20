@@ -200,5 +200,8 @@ This software is distributed under the terms of the GNU General Public License v
 !!! tip "Getting Started"
     New to Gthulhu? Start with our [Installation Guide](installation.en.md) and learn [How It Works](how-it-works.en.md).
 
+!!! info "Learn More"
+    Explore the [Development History](development-history.en.md) to understand technical challenges and solutions.
+
 !!! info "Need Help?"
     Check our [FAQ](faq.en.md) for common questions or create an issue on GitHub.

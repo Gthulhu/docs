@@ -15,6 +15,9 @@ nav:
   - Project Goals:
     - English: project-goals.en.md
     - 中文: project-goals.md
+  - Development History:
+    - English: development-history.en.md
+    - 中文: development-history.md
   - API Reference:
     - English: api-reference.en.md
     - 中文: api-reference.md
