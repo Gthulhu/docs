@@ -302,8 +302,8 @@ go func() {
 
 ```bash
 # 克隆文檔專案
-git clone https://github.com/Gthulhu/gthulhu-docs.git
-cd gthulhu-docs
+git clone https://github.com/Gthulhu/docs.git
+cd docs
 
 # 安裝 MkDocs
 pip install mkdocs mkdocs-material

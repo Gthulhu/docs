@@ -4,7 +4,7 @@ This repository contains the official documentation for Gthulhu and SCX GoLand C
 
 ## 🌐 Live Documentation
 
-Visit the documentation at: [https://gthulhu.github.io/gthulhu-docs](https://gthulhu.github.io/gthulhu-docs)
+Visit the documentation at: [https://gthulhu.github.io/docs](https://gthulhu.github.io/docs)
 
 ## 📚 Documentation Structure
 
@@ -39,8 +39,8 @@ The documentation is available in both Chinese and English:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/Gthulhu/gthulhu-docs.git
-cd gthulhu-docs
+git clone https://github.com/Gthulhu/docs.git
+cd docs
 ```
 
 2. Install dependencies:
@@ -141,7 +141,7 @@ This documentation is licensed under the same terms as the Gthulhu project - GNU
 
 If you have questions about the documentation:
 
-- 📝 **Documentation Issues**: [GitHub Issues](https://github.com/Gthulhu/gthulhu-docs/issues)
+- 📝 **Documentation Issues**: [GitHub Issues](https://github.com/Gthulhu/docs/issues)
 - 💬 **General Questions**: [GitHub Discussions](https://github.com/Gthulhu/Gthulhu/discussions)
 - 🐛 **Project Issues**: [Gthulhu Issues](https://github.com/Gthulhu/Gthulhu/issues)
 

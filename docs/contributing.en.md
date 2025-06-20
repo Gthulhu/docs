@@ -302,8 +302,8 @@ Documentation improvements are equally important:
 
 ```bash
 # Clone documentation project
-git clone https://github.com/Gthulhu/gthulhu-docs.git
-cd gthulhu-docs
+git clone https://github.com/Gthulhu/docs.git
+cd docs
 
 # Install MkDocs
 pip install mkdocs mkdocs-material
