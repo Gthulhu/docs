@@ -1,0 +1,58 @@
+site_name: Gthulhu & SCX GoLand Core Documentation
+site_description: 基於 Linux Scheduler Extension 的雲原生工作負載最佳化調度器
+site_url: https://gthulhu.github.io/
+
+nav:
+  - 首頁: index.md
+  - 安裝指南: installation.md
+  - 工作原理: how-it-works.md
+  - 專案目標: project-goals.md
+  - API 參考: api-reference.md
+  - 常見問題: faq.md
+  - 貢獻指南: contributing.md
+
+theme:
+  name: material
+  language: zh-TW
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: 切換至深色模式
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: 切換至淺色模式
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+
+plugins:
+  - search:
+      lang: zh
+  - mermaid2
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - attr_list
+  - md_in_html
