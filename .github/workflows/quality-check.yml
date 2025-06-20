@@ -1,0 +1,142 @@
+name: Documentation Quality Check
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - '.github/workflows/**'
+
+jobs:
+  quality-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: 📦 Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mkdocs mkdocs-material mkdocs-mermaid2-plugin
+          pip install markdown-link-check
+          
+      - name: 🔍 Lint MkDocs configuration
+        run: |
+          echo "🔧 Checking MkDocs configuration..."
+          mkdocs config
+          python -c "
+          import yaml
+          with open('mkdocs.yml', 'r', encoding='utf-8') as f:
+              config = yaml.safe_load(f)
+          print('✅ MkDocs configuration is valid YAML')
+          print(f'📊 Found {len(config.get(\"nav\", []))} navigation items')
+          "
+          
+      - name: 📝 Check Markdown files
+        run: |
+          echo "📄 Checking Markdown files for common issues..."
+          
+          # 檢查是否有空的 Markdown 檔案
+          find docs/ -name "*.md" -size 0 | while read file; do
+            echo "⚠️  Empty file found: $file"
+          done
+          
+          # 檢查檔案名稱一致性
+          echo "🔤 Checking filename consistency..."
+          for file in docs/*.md; do
+            if [[ "$file" != *".en.md" ]]; then
+              base=$(basename "$file" .md)
+              if [[ ! -f "docs/$base.en.md" ]]; then
+                echo "⚠️  Missing English version for: $file"
+              fi
+            fi
+          done
+          
+          # 統計文檔數量
+          zh_files=$(find docs/ -name "*.md" ! -name "*.en.md" | wc -l)
+          en_files=$(find docs/ -name "*.en.md" | wc -l)
+          echo "📊 Documentation statistics:"
+          echo "   Chinese files: $zh_files"
+          echo "   English files: $en_files"
+          
+      - name: 🔗 Check internal links
+        run: |
+          echo "🔗 Building docs to check internal links..."
+          mkdocs build --strict
+          
+      - name: 📊 Generate documentation report
+        run: |
+          echo "📋 Documentation Report" > doc_report.md
+          echo "======================" >> doc_report.md
+          echo "" >> doc_report.md
+          echo "## 📈 Statistics" >> doc_report.md
+          echo "- Total Markdown files: $(find docs/ -name "*.md" | wc -l)" >> doc_report.md
+          echo "- Chinese files: $(find docs/ -name "*.md" ! -name "*.en.md" | wc -l)" >> doc_report.md
+          echo "- English files: $(find docs/ -name "*.en.md" | wc -l)" >> doc_report.md
+          echo "- Generated HTML files: $(find site/ -name "*.html" | wc -l)" >> doc_report.md
+          echo "- Site size: $(du -sh site/ | cut -f1)" >> doc_report.md
+          echo "" >> doc_report.md
+          echo "## 📁 File Structure" >> doc_report.md
+          echo "\`\`\`" >> doc_report.md
+          tree docs/ >> doc_report.md
+          echo "\`\`\`" >> doc_report.md
+          
+          cat doc_report.md
+          
+      - name: 🎯 Validate navigation consistency
+        run: |
+          echo "🧭 Checking navigation consistency..."
+          python -c "
+          import yaml
+          with open('mkdocs.yml', 'r', encoding='utf-8') as f:
+              config = yaml.safe_load(f)
+          
+          nav = config.get('nav', [])
+          missing_files = []
+          
+          def check_nav_item(item, path=''):
+              if isinstance(item, dict):
+                  for key, value in item.items():
+                      if isinstance(value, str):
+                          if not value.startswith('http') and not os.path.exists(f'docs/{value}'):
+                              missing_files.append(f'docs/{value}')
+                      elif isinstance(value, list):
+                          for subitem in value:
+                              check_nav_item(subitem, f'{path}/{key}')
+                      elif isinstance(value, dict):
+                          check_nav_item(value, f'{path}/{key}')
+          
+          import os
+          for item in nav:
+              check_nav_item(item)
+          
+          if missing_files:
+              print('❌ Missing files referenced in navigation:')
+              for file in missing_files:
+                  print(f'   - {file}')
+              exit(1)
+          else:
+              print('✅ All navigation files exist')
+          "
+
+  spell-check:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: 🔤 Spell check
+        uses: streetsidesoftware/cspell-action@v2
+        with:
+          files: 'docs/**/*.md'
+          config: '.cspell.json'
+          strict: false

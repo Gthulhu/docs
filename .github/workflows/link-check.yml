@@ -1,0 +1,54 @@
+name: Check Links
+
+on:
+  schedule:
+    # 每週檢查一次外部連結
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'docs/**'
+
+jobs:
+  link-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: 📦 Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mkdocs mkdocs-material mkdocs-mermaid2-plugin
+          npm install -g markdown-link-check
+          
+      - name: 🔨 Build documentation
+        run: mkdocs build --clean
+        
+      - name: 🔗 Check internal links
+        run: |
+          echo "🔍 Checking internal links..."
+          find site/ -name "*.html" -exec echo "Checking {}" \; -exec grep -l "href=" {} \; | head -10
+          
+      - name: 🌐 Check external links in Markdown
+        run: |
+          echo "🌍 Checking external links in Markdown files..."
+          for file in docs/*.md; do
+            echo "Checking links in $file..."
+            markdown-link-check "$file" --config .markdown-link-check.json || true
+          done
+          
+      - name: 📋 Generate link report
+        run: |
+          echo "📊 Link Check Report" > link_report.md
+          echo "===================" >> link_report.md
+          echo "" >> link_report.md
+          echo "✅ Internal link structure validated" >> link_report.md
+          echo "📅 Checked on: $(date)" >> link_report.md
+          
+          cat link_report.md

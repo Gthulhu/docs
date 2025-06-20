@@ -1,0 +1,79 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "languageSettings": [
+    {
+      "languageId": "markdown",
+      "locale": "en"
+    }
+  ],
+  "words": [
+    "Gthulhu",
+    "sched",
+    "ext",
+    "vruntime",
+    "libbpf",
+    "bpf",
+    "BPF",
+    "CPU",
+    "NUMA",
+    "CFS",
+    "microservices",
+    "containerized",
+    "syscalls",
+    "userspace",
+    "API",
+    "APIs",
+    "GoLand",
+    "scx",
+    "SCX",
+    "mkdocs",
+    "MkDocs",
+    "dockerfile",
+    "Dockerfile",
+    "Kubernetes",
+    "namespace",
+    "namespaces",
+    "preemption",
+    "golang",
+    "Github",
+    "repo",
+    "repos",
+    "frontend",
+    "backend",
+    "workload",
+    "workloads",
+    "runtime",
+    "latency",
+    "microsecond",
+    "nanosecond",
+    "throughput",
+    "config",
+    "configs",
+    "struct",
+    "structs",
+    "mutex",
+    "mutexes",
+    "scheduler",
+    "schedulers",
+    "localhost",
+    "Ubuntu",
+    "Debian",
+    "CentOS",
+    "RHEL",
+    "Fedora",
+    "EPEL"
+  ],
+  "ignorePaths": [
+    "node_modules/**",
+    "site/**",
+    ".git/**",
+    "*.min.*"
+  ],
+  "overrides": [
+    {
+      "filename": "docs/**/*.md",
+      "caseSensitive": false
+    }
+  ]
+}
