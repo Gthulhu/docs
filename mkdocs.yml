@@ -4,26 +4,26 @@ site_url: https://gthulhu.github.io/
 
 nav:
   - Home: 
-    - 中文: index.md
-    - English: index.en.md
+    - English: index.md
+    - 中文: index.zh.md
   - Installation:
-    - 中文: installation.md  
     - English: installation.en.md
+    - 中文: installation.md  
   - How It Works:
-    - 中文: how-it-works.md
     - English: how-it-works.en.md
+    - 中文: how-it-works.md
   - Project Goals:
-    - 中文: project-goals.md
     - English: project-goals.en.md
+    - 中文: project-goals.md
   - API Reference:
-    - 中文: api-reference.md
     - English: api-reference.en.md
+    - 中文: api-reference.md
   - FAQ:
-    - 中文: faq.md
     - English: faq.en.md
+    - 中文: faq.md
   - Contributing:
-    - 中文: contributing.md
     - English: contributing.en.md
+    - 中文: contributing.md
 
 theme:
   name: material
@@ -55,8 +55,8 @@ theme:
 plugins:
   - search:
       lang: 
-        - zh
         - en
+        - zh
   - mermaid2
 
 markdown_extensions:

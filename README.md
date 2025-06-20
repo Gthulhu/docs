@@ -11,7 +11,7 @@ Visit the documentation at: [https://gthulhu.github.io/docs](https://gthulhu.git
 The documentation is available in both Chinese and English:
 
 ### Chinese (中文)
-- [首頁](docs/index.md) - 專案概述和快速開始
+- [首頁](docs/index.zh.md) - 專案概述和快速開始
 - [安裝指南](docs/installation.md) - 詳細安裝步驟
 - [工作原理](docs/how-it-works.md) - 核心工作原理與技術架構
 - [專案目標](docs/project-goals.md) - 設計理念與發展目標
@@ -20,7 +20,7 @@ The documentation is available in both Chinese and English:
 - [貢獻指南](docs/contributing.md) - 開發者參與指南
 
 ### English
-- [Home](docs/index.en.md) - Project overview and quick start
+- [Home](docs/index.md) - Project overview and quick start
 - [Installation](docs/installation.en.md) - Detailed installation steps
 - [How It Works](docs/how-it-works.en.md) - Core working principles and architecture
 - [Project Goals](docs/project-goals.en.md) - Design philosophy and development goals
