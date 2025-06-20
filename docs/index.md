@@ -153,15 +153,6 @@ Designed for compute-intensive workloads:
 - Machine learning training
 - Simulation workloads
 
-## Performance Benchmarks
-
-| Metric | Target | Current Status | vs CFS |
-|--------|--------|----------------|--------|
-| Scheduling Latency | < 10μs | Testing | ~50μs |
-| Context Switch Time | < 2μs | Optimizing | ~3μs |
-| CPU Utilization | > 95% | 85% | 80% |
-| Memory Overhead | < 1MB | 0.5MB | 0.3MB |
-| Throughput Improvement | > 15% | 10% | Baseline |
 
 ## System Requirements
 
@@ -171,13 +162,6 @@ Designed for compute-intensive workloads:
 - **Architecture**: x86_64
 - **Memory**: 2GB RAM
 - **Storage**: 1GB available space
-
-### Supported Distributions
-
-- Ubuntu 24.04+
-- Fedora 39+
-- Arch Linux (latest)
-- CentOS/RHEL 9+ (planned)
 
 ## Community
 

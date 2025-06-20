@@ -145,15 +145,8 @@ Cloud-Native Optimization:
 
 ## Performance Metrics and Benchmarks
 
-### Key Performance Indicators (KPI)
-
-| Metric | Target | Current Status | Baseline Comparison |
-|--------|--------|----------------|---------------------|
-| Scheduling Latency | < 10μs | Testing | CFS: ~50μs |
-| Context Switch Time | < 2μs | Optimizing | CFS: ~3μs |
-| CPU Utilization | > 95% | 85% | CFS: 80% |
-| Memory Overhead | < 1MB | 0.5MB | CFS: 0.3MB |
-| Throughput Improvement | > 15% | 10% | vs CFS |
+!!! warning "Development Status"
+    The data below represents our development goals and early testing results, not production benchmarks. The project is currently in active development.
 
 ### Benchmark Test Scenarios
 
