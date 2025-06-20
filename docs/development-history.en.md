@@ -1,5 +1,8 @@
 # Development History
 
+!!! info "Author"
+    [Yi Chen](https://www.linkedin.com/in/ian-chen-88b70b1aa/) [[GitHub](https://github.com/ianchen0119)], Founder of Gthulhu <ychen.desl@gmail.com>
+
 This page documents the development history, technical challenges, and solutions of the Gthulhu and SCX GoLand Core projects.
 
 ## Project Origins

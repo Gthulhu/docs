@@ -1,5 +1,8 @@
 # 開發歷程
 
+!!! info "作者"
+    [Yi Chen](https://www.linkedin.com/in/ian-chen-88b70b1aa/) [[GitHub](https://github.com/ianchen0119)], Gthulhu 專案發起人 <ychen.desl@gmail.com>
+
 本頁面記錄了 Gthulhu 和 SCX GoLand Core 專案的開發歷程、技術挑戰及解決方案。
 
 ## 專案緣起

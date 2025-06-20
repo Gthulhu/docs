@@ -1,4 +1,4 @@
-site_name: Gthulhu & SCX GoLand Core Documentation
+site_name: Gthulhu
 site_description: Cloud-native workload optimization scheduler based on Linux Scheduler Extension
 site_url: https://gthulhu.github.io/
 
@@ -6,24 +6,25 @@ nav:
   - Home: 
     - English: index.md
     - 中文: index.zh.md
-  - Installation:
-    - English: installation.en.md
-    - 中文: installation.md  
-  - How It Works:
-    - English: how-it-works.en.md
-    - 中文: how-it-works.md
-  - Project Goals:
-    - English: project-goals.en.md
-    - 中文: project-goals.md
-  - Development History:
-    - English: development-history.en.md
-    - 中文: development-history.md
-  - API Reference:
-    - English: api-reference.en.md
-    - 中文: api-reference.md
-  - FAQ:
-    - English: faq.en.md
-    - 中文: faq.md
+  - Get Started:
+    - Installation:
+      - English: installation.en.md
+      - 中文: installation.md
+    - How It Works:
+      - English: how-it-works.en.md
+      - 中文: how-it-works.md
+    - Project Goals:
+      - English: project-goals.en.md
+      - 中文: project-goals.md
+    - Development History:
+      - English: development-history.en.md
+      - 中文: development-history.md
+    - API Reference:
+      - English: api-reference.en.md
+      - 中文: api-reference.md
+    - FAQ:
+      - English: faq.en.md
+      - 中文: faq.md
   - Contributing:
     - English: contributing.en.md
     - 中文: contributing.md

@@ -1,28 +1,28 @@
-# Gthulhu & SCX GoLand Core
+# Gthulhu
 
 Welcome to the official documentation for **Gthulhu** and **SCX GoLand Core** - advanced Linux schedulers designed to optimize cloud-native workloads using the Linux Scheduler Extension (sched_ext) framework.
 
 <div class="grid cards" markdown>
 
--   :material-rocket-launch-outline: **High Performance**
+-   **High Performance**
 
     ---
 
     Microsecond-level scheduling latency and intelligent task prioritization for modern applications
 
--   :material-cloud-outline: **Cloud Native**
+-   **Cloud Native**
 
     ---
 
     Optimized for containerized environments, microservices, and distributed workloads
 
--   :material-cpu-64-bit: **Topology Aware**
+-   **Topology Aware**
 
     ---
 
     CPU cache hierarchy and NUMA awareness for optimal performance on modern hardware
 
--   :material-puzzle-outline: **Extensible**
+-   **Extensible**
 
     ---
 
