@@ -85,6 +85,7 @@ sudo ./main
 - **GitHub**: [Gthulhu](https://github.com/Gthulhu/Gthulhu) | [SCX GoLand Core](https://github.com/Gthulhu/scx_goland_core)
 - **問題回報**: 請在 GitHub Issues 中回報問題
 - **功能請求**: 歡迎提交 Pull Request 或開啟 Issue 討論
+- **媒體報導**: 查看 [媒體報導與提及](mentioned.md) 了解專案的影響力
 
 ---
 

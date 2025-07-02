@@ -25,6 +25,9 @@ nav:
     - FAQ:
       - English: faq.en.md
       - 中文: faq.md
+    - Mentioned:
+      - English: mentioned.en.md
+      - 中文: mentioned.md
   - Contributing:
     - English: contributing.en.md
     - 中文: contributing.md

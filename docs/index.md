@@ -170,6 +170,7 @@ Designed for compute-intensive workloads:
 - 💬 **Discussions**: [GitHub Discussions](https://github.com/Gthulhu/Gthulhu/discussions)
 - 🐛 **Issues**: [GitHub Issues](https://github.com/Gthulhu/Gthulhu/issues)
 - 📧 **Contact**: [Project Maintainers](mailto:maintainers@gthulhu.dev)
+- 📰 **Media Coverage**: Check out [Media Coverage & Mentions](mentioned.en.md) to see project impact
 
 ### Contributing
 
