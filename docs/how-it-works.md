@@ -1,20 +1,20 @@
-# 工作原理
+# 運作原理
 
-本頁面詳細介紹 Gthulhu 和 SCX GoLand Core 調度器的核心工作原理與技術架構。
+本頁面提供關於 Gthulhu 和 SCX GoLand Core 排程器的核心工作原理和技術架構的詳細資訊。
 
 ## 整體架構
 
-### 雙組件設計
+### 雙元件設計
 
-Gthulhu 調度器採用現代化的雙組件架構：
+Gthulhu 排程器採用現代雙元件架構：
 
 ```mermaid
 graph TB
-    A[使用者應用程式] --> B[Linux 核心]
+    A[用戶應用程式] --> B[Linux 核心]
     B --> C[sched_ext 框架]
-    C --> D[BPF 調度器程式]
-    D --> E[使用者空間調度器]
-    E --> F[Go 調度邏輯]
+    C --> D[BPF 排程器程式]
+    D --> E[用戶空間排程器]
+    E --> F[Go 排程邏輯]
     F --> G[SCX GoLand Core]
     
     subgraph "核心空間"
@@ -23,38 +23,38 @@ graph TB
         D
     end
     
-    subgraph "使用者空間"
+    subgraph "用戶空間"
         E
         F
         G
     end
 ```
 
-#### 1. BPF 組件 (核心空間)
+#### 1. BPF 元件 (核心空間)
 
 - **檔案**: `main.bpf.c`
-- **功能**: 實作 sched_ext 框架的低階介面
+- **功能**: 實現低層級 sched_ext 框架介面
 - **職責**:
   - 任務佇列管理
   - CPU 選擇邏輯
-  - 基本調度決策
-  - 與使用者空間通訊
+  - 基本排程決策
+  - 與用戶空間通訊
 
-#### 2. Go 組件 (使用者空間)
+#### 2. Go 元件 (用戶空間)
 
 - **檔案**: `main.go` + SCX GoLand Core
-- **功能**: 實作高階調度策略
+- **功能**: 實現高層級排程政策
 - **職責**:
-  - 複雜調度演算法
+  - 複雜排程演算法
   - 任務優先級計算
-  - 系統監控與統計
+  - 系統監控和統計
   - 動態參數調整
 
-## 核心調度算法
+## 核心排程演算法
 
-### 虛擬執行時間 (Virtual Runtime)
+### 虛擬執行時間 (vruntime)
 
-Gthulhu 使用基於虛擬執行時間的公平調度算法：
+Gthulhu 使用基於虛擬執行時間的公平排程演算法：
 
 ```go
 // 虛擬執行時間計算
@@ -63,29 +63,29 @@ vruntime = actual_runtime * NICE_0_WEIGHT / task_weight
 
 #### 關鍵概念
 
-1. **時間片 (Time Slice)**
+1. **時間片段**
    ```c
-   // 基本時間片計算
+   // 基本時間片段計算
    slice_ns = base_slice_ns * (task_weight / NICE_0_WEIGHT)
    ```
 
-2. **任務權重 (Task Weight)**
+2. **任務權重**
    ```c
    // 基於 nice 值的權重計算
    weight = prio_to_weight[task->static_prio - MAX_RT_PRIO]
    ```
 
-3. **調度決策**
+3. **排程決策**
    ```c
-   // 選擇 vruntime 最小的任務
+   // 選擇具有最小虛擬執行時間的任務
    next_task = min_vruntime_task(runqueue)
    ```
 
-### 延遲敏感最佳化
+### 延遲敏感優化
 
 #### 任務分類
 
-系統自動識別並分類不同類型的任務：
+系統自動識別和分類不同類型的任務：
 
 ```mermaid
 graph LR
@@ -99,254 +99,215 @@ graph LR
     E --> H[平衡模式]
 ```
 
-#### 優先級提升策略
-
-```c
-// 基於自願上下文切換的優先級提升
-if (task->voluntary_ctxt_switches > threshold) {
-    task->priority_boost = calculate_boost(task->behavior);
-    task->vruntime -= priority_boost;
-}
-```
-
-## CPU 拓撲感知調度
+## CPU 拓撲感知排程
 
 ### 階層式 CPU 選擇
 
 ```mermaid
 graph TB
-    A[任務需要 CPU] --> B{同一 CPU 核心}
-    B -->|可用| C[使用同一核心]
-    B -->|不可用| D{同一 CPU 快取}
-    D -->|可用| E[使用相同快取 CPU]
-    D -->|不可用| F{同一 NUMA 節點}
-    F -->|可用| G[使用相同節點 CPU]
-    F -->|不可用| H[使用任意可用 CPU]
+    A[任務需要 CPU] --> AA{僅允許單一 CPU?}
+    AA -->|是| AB[檢查 CPU 是否空閒]
+    AA -->|否| B{SMT 系統?}
+    
+    AB -->|空閒| AC[使用先前的 CPU]
+    AB -->|非空閒| AD[返回 EBUSY 失敗]
+    
+    B -->|是| C{先前 CPU 的核心完全空閒?}
+    B -->|否| G{先前 CPU 空閒?}
+    
+    C -->|是| D[使用先前的 CPU]
+    C -->|否| E{L2 快取中有完全空閒的 CPU?}
+    
+    E -->|是| F[使用相同 L2 快取中的 CPU]
+    E -->|否| H{L3 快取中有完全空閒的 CPU?}
+    
+    H -->|是| I[使用相同 L3 快取中的 CPU]
+    H -->|否| J{有任何完全空閒的核心?}
+    
+    J -->|是| K[使用任何完全空閒的核心]
+    J -->|否| G
+    
+    G -->|是| L[使用先前的 CPU]
+    G -->|否| M{L2 快取中有任何空閒的 CPU?}
+    
+    M -->|是| N[使用相同 L2 快取中的 CPU]
+    M -->|否| O{L3 快取中有任何空閒的 CPU?}
+    
+    O -->|是| P[使用相同 L3 快取中的 CPU]
+    O -->|否| Q{有任何空閒的 CPU?}
+    
+    Q -->|是| R[使用任何空閒的 CPU]
+    Q -->|否| S[返回 EBUSY]
 ```
 
-### 快取親和性優化
+## API 和排程策略設計
 
-```c
-// CPU 快取層級考量
-struct cpu_topology {
-    int cpu_id;
-    int core_id;
-    int package_id;
-    int cache_level;
-    int numa_node;
-};
+Gthulhu 實現了一個靈活的機制，通過 RESTful API 介面動態調整其排程行為。這使運營者能夠在不重啟或重新編譯代碼的情況下微調排程器的性能特性。
 
-// 選擇最佳 CPU 的評分函數
-int calculate_cpu_score(struct task_struct *task, int cpu) {
-    int score = 0;
+### API 架構
+
+API 服務器提供用於獲取和設置排程策略的端點：
+
+```mermaid
+graph TB
+    A[Gthulhu 排程器] -->|定期請求| B[API 服務器]
+    C[運營者/管理員] -->|配置策略| B
+    B -->|返回策略| A
+    A -->|應用策略| D[任務排程]
     
-    // 相同核心得分最高
-    if (task->last_cpu == cpu) score += 100;
+    subgraph "外部管理"
+        C
+    end
     
-    // 相同快取
-    if (same_cache_domain(task->last_cpu, cpu)) score += 50;
-    
-    // 相同 NUMA 節點
-    if (same_numa_node(task->last_cpu, cpu)) score += 20;
-    
-    // CPU 負載考量
-    score -= cpu_utilization(cpu);
-    
-    return score;
-}
+    subgraph "排程系統"
+        A
+        D
+    end
 ```
 
-## 動態調整機制
+#### API 端點
 
-### 系統負載監控
+API 服務器公開了兩個主要端點用於排程策略管理：
 
-```go
-// 系統負載指標
-type SystemMetrics struct {
-    CPUUtilization  float64
-    ContextSwitches uint64
-    LoadAverage     [3]float64
-    MemoryPressure  float64
-}
+- **GET /api/v1/scheduling/strategies**: 獲取當前排程策略
+- **POST /api/v1/scheduling/strategies**: 設置新的排程策略
 
-// 動態調整調度參數
-func adjustSchedulingParams(metrics *SystemMetrics) {
-    if metrics.CPUUtilization > 0.8 {
-        // 高負載：增加時間片，減少上下文切換
-        increaseTimeSlice()
-    } else if metrics.CPUUtilization < 0.3 {
-        // 低負載：減少時間片，提高回應性
-        decreaseTimeSlice()
+### 排程策略數據模型
+
+排程策略使用以下結構表示：
+
+```json
+{
+  "scheduling": [
+    {
+      "priority": true,
+      "execution_time": 20000000,
+      "pid": 12345
+    },
+    {
+      "priority": false,
+      "execution_time": 10000000,
+      "selectors": [
+        {
+          "key": "tier",
+          "value": "control-plane"
+        }
+      ]
     }
+  ]
 }
 ```
 
-### 適應性調整
+排程策略的關鍵組件：
 
-```c
-// 根據任務行为动态调整
-void adapt_task_parameters(struct task_struct *task) {
-    // 计算任务的 I/O 比率
-    double io_ratio = task->io_wait_time / task->total_runtime;
+1. **優先級** (`boolean`): 當為 true 時，任務的虛擬執行時間設置為最小值，有效地賦予其最高排程優先級
+2. **執行時間** (`uint64`): 任務的自定義時間片（以納秒為單位）
+3. **PID** (`int`): 策略適用的進程 ID
+4. **選擇器** (`array`): 可選的 Kubernetes 標籤選擇器，用於定位進程組
+
+### 策略應用流程
+
+獲取和應用排程策略的過程遵循以下順序：
+
+```mermaid
+sequenceDiagram
+    participant S as 排程器
+    participant A as API 服務器
+    participant T as 任務池
     
-    if (io_ratio > 0.7) {
-        // I/O 密集任务：减少 vruntime 惩罚
-        task->io_boost_factor = 1.5;
-    } else if (io_ratio < 0.1) {
-        // CPU 密集任务：正常调度
-        task->io_boost_factor = 1.0;
-    }
-}
+    S->>S: 初始化排程器
+    S->>S: 啟動策略獲取器
+    
+    loop 每隔 interval 秒
+        S->>A: 請求當前策略
+        A->>S: 返回策略列表
+        S->>S: 更新策略映射
+    end
+    
+    Note over S,T: 任務排程期間
+    T->>S: 任務需要排程
+    S->>S: 檢查任務是否有自定義策略
+    S->>S: 如需要則應用優先級設置
+    S->>S: 如指定則應用自定義執行時間
+    S->>T: 根據應用的策略排程任務
 ```
 
-## BPF 與使用者空間通訊
+### Kubernetes 集成
 
-### 通訊機制
+對於容器化環境，Gthulhu 可以使用標籤選擇器將排程策略映射到特定的 pod：
+
+1. **標籤選擇器解析**: API 服務器通過掃描系統中匹配的 pod 將標籤選擇器轉換為特定的 PID
+2. **PID 映射**: 識別每個 pod 的進程並將其與適當的排程策略相關聯
+3. **動態更新**: 隨著 pod 的創建、銷毀或移動，排程器通過定期刷新其策略來適應變化
+
+### 策略優先級邏輯
+
+應用排程策略時，Gthulhu 遵循以下規則：
+
+1. **直接 PID 匹配**: 明確指定 PID 的策略具有最高優先級
+2. **標籤選擇器匹配**: 使用標籤選擇器的策略適用於所有匹配的進程
+3. **默認行為**: 沒有特定策略的進程使用標準排程演算法
+
+### 配置參數
+
+策略獲取行為可以通過排程器的配置文件進行配置：
+
+```yaml
+api:
+  url: "http://api-server:8080"   # API 服務器端點
+  interval: 10                    # 刷新間隔（秒）
+```
+
+這種架構允許在不中斷排程器操作的情況下對排程行為進行動態、細粒度的控制。
+
+## BPF 和用戶空間通信
+
+### 通信機制
 
 ```mermaid
 sequenceDiagram
     participant K as BPF (核心空間)
-    participant U as Go (使用者空間)
+    participant U as Go (用戶空間)
     
-    K->>U: 任務建立事件
+    K->>U: 任務創建事件
     U->>U: 分析任務特性
-    U->>K: 設定調度參數
-    K->>K: 應用調度決策
-    K->>U: 統計資訊更新
-    U->>U: 動態調整策略
+    U->>K: 設置排程參數
+    K->>K: 應用排程決策
+    K->>U: 統計更新
+    U->>U: 動態策略調整
 ```
 
-### 資料結構共享
+## 調試和監控
 
-```c
-// BPF Map 定義
-struct {
-    __uint(type, BPF_MAP_TYPE_HASH);
-    __uint(max_entries, MAX_TASKS);
-    __type(key, pid_t);
-    __type(value, struct task_info);
-} task_info_map SEC(".maps");
-
-// 任務資訊結構
-struct task_info {
-    __u64 vruntime;
-    __u32 weight;
-    __u32 slice_ns;
-    __u64 exec_start;
-    __u64 sum_exec_runtime;
-    __u32 voluntary_ctxt_switches;
-    __u32 nonvoluntary_ctxt_switches;
-};
-```
-
-## 效能最佳化技術
-
-### 1. 無鎖數據結構
-
-```c
-// 使用 RCU 保護的無鎖佇列
-struct lockless_queue {
-    struct rcu_head rcu;
-    atomic_t head;
-    atomic_t tail;
-    struct queue_node *nodes;
-};
-```
-
-### 2. 批次處理
-
-```go
-// 批次處理任務更新
-func batchUpdateTasks(tasks []TaskInfo) {
-    batch := make([]TaskInfo, 0, BATCH_SIZE)
-    
-    for _, task := range tasks {
-        batch = append(batch, task)
-        
-        if len(batch) >= BATCH_SIZE {
-            processBatch(batch)
-            batch = batch[:0]
-        }
-    }
-    
-    if len(batch) > 0 {
-        processBatch(batch)
-    }
-}
-```
-
-### 3. 記憶體對齊最佳化
-
-```c
-// 確保結構體對齊，減少快取未命中
-struct aligned_task_info {
-    __u64 vruntime;      // 8 bytes
-    __u64 exec_start;    // 8 bytes
-    __u32 weight;        // 4 bytes
-    __u32 slice_ns;      // 4 bytes
-    // 總共 24 bytes，符合快取行大小
-} __attribute__((aligned(64)));
-```
-
-## 調試與監控
-
-### BPF 追蹤
+### BPF 追踪
 
 ```bash
 # 監控 BPF 程式執行
 sudo cat /sys/kernel/debug/tracing/trace_pipe
 
-# 檢查 BPF 統計
+# 檢查 BPF 統計數據
 sudo bpftool prog show
 sudo bpftool map dump name task_info_map
 ```
 
-### 效能指標
-
-```go
-// 關鍵效能指標
-type PerformanceMetrics struct {
-    AverageLatency      time.Duration
-    ContextSwitchRate   float64
-    CPUUtilization      float64
-    TaskMigrationRate   float64
-    SchedulingOverhead  float64
-}
-
-// 即時監控
-func monitorPerformance() {
-    ticker := time.NewTicker(1 * time.Second)
-    defer ticker.Stop()
-    
-    for {
-        select {
-        case <-ticker.C:
-            metrics := collectMetrics()
-            logMetrics(metrics)
-            adjustParameters(metrics)
-        }
-    }
-}
-```
-
 ## 與 CFS 的差異
 
-| 特性 | CFS (完全公平調度器) | Gthulhu |
-|------|---------------------|---------|
-| 調度策略 | 基於虛擬執行時間 | 基於虛擬執行時間 + 延遲最佳化 |
-| 任務分類 | 統一處理 | 自動分類最佳化 |
+| 功能 | CFS (完全公平排程器) | Gthulhu |
+|---------|----------------------------------|---------|
+| 排程策略 | 基於虛擬執行時間 | 虛擬執行時間 + 延遲優化 |
+| 任務分類 | 統一處理 | 自動分類優化 |
 | CPU 選擇 | 基本負載平衡 | 拓撲感知 + 快取親和性 |
-| 動態調整 | 有限 | 全面的適應性調整 |
-| 擴展性 | 核心內建 | 使用者空間可擴展 |
+| 動態調整 | 有限 | 全面自適應調整 |
+| 可擴展性 | 核心內建 | 用戶空間可擴展 |
 
 ## 未來發展方向
 
-1. **機器學習整合**: 使用 ML 模型預測任務行為
-2. **容器感知調度**: 針對容器化環境最佳化
-3. **能耗最佳化**: 整合電源管理考量
-4. **即時任務支援**: 支援硬即時任務調度
+1. **機器學習集成**: 使用 ML 模型預測任務行為
+2. **容器感知排程**: 針對容器化環境的優化
+3. **能源優化**: 集成電源管理考量
+4. **實時任務支持**: 支持硬實時任務排程
 
 ---
 
 !!! info "深入了解"
-    想要更深入了解實作細節，建議查看 [API 參考文檔](api-reference.md) 和原始碼註解。
+    有關更多實現細節，請參閱 [API 參考](api-reference.md) 和源代碼註釋。

@@ -99,105 +99,166 @@ graph LR
     E --> H[Balanced Mode]
 ```
 
-#### Priority Boost Strategy
-
-```c
-// Priority boost based on voluntary context switches
-if (task->voluntary_ctxt_switches > threshold) {
-    task->priority_boost = calculate_boost(task->behavior);
-    task->vruntime -= priority_boost;
-}
-```
-
 ## CPU Topology-Aware Scheduling
 
 ### Hierarchical CPU Selection
 
 ```mermaid
 graph TB
-    A[Task Needs CPU] --> B{Same CPU Core}
-    B -->|Available| C[Use Same Core]
-    B -->|Unavailable| D{Same CPU Cache}
-    D -->|Available| E[Use Same Cache CPU]
-    D -->|Unavailable| F{Same NUMA Node}
-    F -->|Available| G[Use Same Node CPU]
-    F -->|Unavailable| H[Use Any Available CPU]
+    A[Task Needs CPU] --> AA{Single CPU Allowed?}
+    AA -->|Yes| AB[Check if CPU is Idle]
+    AA -->|No| B{SMT System?}
+    
+    AB -->|Idle| AC[Use Previous CPU]
+    AB -->|Not Idle| AD[Fail with EBUSY]
+    
+    B -->|Yes| C{Previous CPU Full-Idle Core?}
+    B -->|No| G{Previous CPU Idle?}
+    
+    C -->|Yes| D[Use Previous CPU]
+    C -->|No| E{Full-Idle CPU in L2 Cache?}
+    
+    E -->|Yes| F[Use CPU in Same L2 Cache]
+    E -->|No| H{Full-Idle CPU in L3 Cache?}
+    
+    H -->|Yes| I[Use CPU in Same L3 Cache]
+    H -->|No| J{Any Full-Idle Core Available?}
+    
+    J -->|Yes| K[Use Any Full-Idle Core]
+    J -->|No| G
+    
+    G -->|Yes| L[Use Previous CPU]
+    G -->|No| M{Any Idle CPU in L2 Cache?}
+    
+    M -->|Yes| N[Use CPU in Same L2 Cache]
+    M -->|No| O{Any Idle CPU in L3 Cache?}
+    
+    O -->|Yes| P[Use CPU in Same L3 Cache]
+    O -->|No| Q{Any Idle CPU Available?}
+    
+    Q -->|Yes| R[Use Any Idle CPU]
+    Q -->|No| S[Return EBUSY]
 ```
 
-### Cache Affinity Optimization
+## API and Scheduling Policy Design
 
-```c
-// CPU cache level considerations
-struct cpu_topology {
-    int cpu_id;
-    int core_id;
-    int package_id;
-    int cache_level;
-    int numa_node;
-};
+Gthulhu implements a flexible mechanism to dynamically adjust its scheduling behavior through a RESTful API interface. This allows operators to fine-tune the scheduler's performance characteristics without restarting or recompiling the code.
 
-// Scoring function for optimal CPU selection
-int calculate_cpu_score(struct task_struct *task, int cpu) {
-    int score = 0;
+### API Architecture
+
+The API server provides endpoints for retrieving and setting scheduling strategies:
+
+```mermaid
+graph TB
+    A[Gthulhu Scheduler] -->|Periodic Requests| B[API Server]
+    C[Operators/Admins] -->|Configure Strategies| B
+    B -->|Return Strategies| A
+    A -->|Apply Strategies| D[Task Scheduling]
     
-    // Same core gets highest score
-    if (task->last_cpu == cpu) score += 100;
+    subgraph "External Management"
+        C
+    end
     
-    // Same cache
-    if (same_cache_domain(task->last_cpu, cpu)) score += 50;
-    
-    // Same NUMA node
-    if (same_numa_node(task->last_cpu, cpu)) score += 20;
-    
-    // CPU load consideration
-    score -= cpu_utilization(cpu);
-    
-    return score;
-}
+    subgraph "Scheduling System"
+        A
+        D
+    end
 ```
 
-## Dynamic Adjustment Mechanisms
+#### API Endpoints
 
-### System Load Monitoring
+The API server exposes two primary endpoints for scheduling strategy management:
 
-```go
-// System load metrics
-type SystemMetrics struct {
-    CPUUtilization  float64
-    ContextSwitches uint64
-    LoadAverage     [3]float64
-    MemoryPressure  float64
-}
+- **GET /api/v1/scheduling/strategies**: Retrieves current scheduling strategies
+- **POST /api/v1/scheduling/strategies**: Sets new scheduling strategies
 
-// Dynamically adjust scheduling parameters
-func adjustSchedulingParams(metrics *SystemMetrics) {
-    if metrics.CPUUtilization > 0.8 {
-        // High load: increase time slice, reduce context switches
-        increaseTimeSlice()
-    } else if metrics.CPUUtilization < 0.3 {
-        // Low load: decrease time slice, improve responsiveness
-        decreaseTimeSlice()
+### Scheduling Strategy Data Model
+
+A scheduling strategy is represented using the following structure:
+
+```json
+{
+  "scheduling": [
+    {
+      "priority": true,
+      "execution_time": 20000000,
+      "pid": 12345
+    },
+    {
+      "priority": false,
+      "execution_time": 10000000,
+      "selectors": [
+        {
+          "key": "tier",
+          "value": "control-plane"
+        }
+      ]
     }
+  ]
 }
 ```
 
-### Adaptive Adjustment
+Key components of a scheduling strategy:
 
-```c
-// Dynamically adjust task parameters based on behavior
-void adapt_task_parameters(struct task_struct *task) {
-    // Calculate task's I/O ratio
-    double io_ratio = task->io_wait_time / task->total_runtime;
+1. **Priority** (`boolean`): When true, the task's virtual runtime is set to the minimum value, effectively giving it the highest scheduling priority
+2. **Execution Time** (`uint64`): Custom time slice in nanoseconds for the task
+3. **PID** (`int`): Process ID to which the strategy applies
+4. **Selectors** (`array`): Optional Kubernetes label selectors for targeting groups of processes
+
+### Strategy Application Flow
+
+The process of fetching and applying scheduling strategies follows this sequence:
+
+```mermaid
+sequenceDiagram
+    participant S as Scheduler
+    participant A as API Server
+    participant T as Task Pool
     
-    if (io_ratio > 0.7) {
-        // I/O intensive task: reduce vruntime penalty
-        task->io_boost_factor = 1.5;
-    } else if (io_ratio < 0.1) {
-        // CPU intensive task: normal scheduling
-        task->io_boost_factor = 1.0;
-    }
-}
+    S->>S: Initialize scheduler
+    S->>S: Start strategy fetcher
+    
+    loop Every interval seconds
+        S->>A: Request current strategies
+        A->>S: Return strategy list
+        S->>S: Update strategy map
+    end
+    
+    Note over S,T: During task scheduling
+    T->>S: Task needs scheduling
+    S->>S: Check if task has custom strategy
+    S->>S: Apply priority setting if needed
+    S->>S: Apply custom execution time if specified
+    S->>T: Schedule task with applied strategy
 ```
+
+### Kubernetes Integration
+
+For containerized environments, Gthulhu can map scheduling strategies to specific pods using label selectors:
+
+1. **Label Selector Resolution**: The API server translates label selectors into specific PIDs by scanning the system for matching pods
+2. **PID Mapping**: Each pod's processes are identified and associated with the appropriate scheduling strategy
+3. **Dynamic Updates**: As pods are created, destroyed, or moved, the scheduler adapts by periodically refreshing its strategies
+
+### Strategy Prioritization Logic
+
+When applying scheduling strategies, Gthulhu follows these rules:
+
+1. **Direct PID Match**: Strategies that explicitly specify a PID have highest precedence
+2. **Label Selector Match**: Strategies using label selectors apply to all matching processes
+3. **Default Behavior**: Processes without specific strategies use the standard scheduling algorithm
+
+### Configuration Parameters
+
+The strategy fetching behavior can be configured through the scheduler's configuration file:
+
+```yaml
+api:
+  url: "http://api-server:8080"   # API server endpoint
+  interval: 10                    # Refresh interval in seconds
+```
+
+This architecture allows for dynamic, fine-grained control over scheduling behavior without interrupting the scheduler's operation.
 
 ## BPF and User Space Communication
 
@@ -216,78 +277,6 @@ sequenceDiagram
     U->>U: Dynamic Strategy Adjustment
 ```
 
-### Shared Data Structures
-
-```c
-// BPF Map definition
-struct {
-    __uint(type, BPF_MAP_TYPE_HASH);
-    __uint(max_entries, MAX_TASKS);
-    __type(key, pid_t);
-    __type(value, struct task_info);
-} task_info_map SEC(".maps");
-
-// Task information structure
-struct task_info {
-    __u64 vruntime;
-    __u32 weight;
-    __u32 slice_ns;
-    __u64 exec_start;
-    __u64 sum_exec_runtime;
-    __u32 voluntary_ctxt_switches;
-    __u32 nonvoluntary_ctxt_switches;
-};
-```
-
-## Performance Optimization Techniques
-
-### 1. Lock-Free Data Structures
-
-```c
-// Lock-free queue protected by RCU
-struct lockless_queue {
-    struct rcu_head rcu;
-    atomic_t head;
-    atomic_t tail;
-    struct queue_node *nodes;
-};
-```
-
-### 2. Batch Processing
-
-```go
-// Batch processing task updates
-func batchUpdateTasks(tasks []TaskInfo) {
-    batch := make([]TaskInfo, 0, BATCH_SIZE)
-    
-    for _, task := range tasks {
-        batch = append(batch, task)
-        
-        if len(batch) >= BATCH_SIZE {
-            processBatch(batch)
-            batch = batch[:0]
-        }
-    }
-    
-    if len(batch) > 0 {
-        processBatch(batch)
-    }
-}
-```
-
-### 3. Memory Alignment Optimization
-
-```c
-// Ensure structure alignment to reduce cache misses
-struct aligned_task_info {
-    __u64 vruntime;      // 8 bytes
-    __u64 exec_start;    // 8 bytes
-    __u32 weight;        // 4 bytes
-    __u32 slice_ns;      // 4 bytes
-    // Total 24 bytes, fits cache line size
-} __attribute__((aligned(64)));
-```
-
 ## Debugging and Monitoring
 
 ### BPF Tracing
@@ -299,34 +288,6 @@ sudo cat /sys/kernel/debug/tracing/trace_pipe
 # Check BPF statistics
 sudo bpftool prog show
 sudo bpftool map dump name task_info_map
-```
-
-### Performance Metrics
-
-```go
-// Key performance indicators
-type PerformanceMetrics struct {
-    AverageLatency      time.Duration
-    ContextSwitchRate   float64
-    CPUUtilization      float64
-    TaskMigrationRate   float64
-    SchedulingOverhead  float64
-}
-
-// Real-time monitoring
-func monitorPerformance() {
-    ticker := time.NewTicker(1 * time.Second)
-    defer ticker.Stop()
-    
-    for {
-        select {
-        case <-ticker.C:
-            metrics := collectMetrics()
-            logMetrics(metrics)
-            adjustParameters(metrics)
-        }
-    }
-}
 ```
 
 ## Differences from CFS
