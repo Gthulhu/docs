@@ -7,8 +7,8 @@ This page collects articles and coverage of the Gthulhu and SCX GoLand Core proj
 ### Echo News #85
 **Published**: 2025  
 **Author**: Bill Mulligan  
-**Platform**: LinkedIn  
-**Link**: [Echo News #85](https://www.linkedin.com/pulse/echo-news-85-bill-mulligan-jcsgf/)
+**Platform**: LinkedIn and eBPF.io Newsletter
+**Link**: [Echo News #85](https://www.linkedin.com/pulse/echo-news-85-bill-mulligan-jcsgf/) [https://ebpf.io/newsletter/](https://isovalent-9197153.hs-sites.com/echo-news-episode-84-ebpf-for-5g.-ciliumcon-cfp-closing-1)
 
 Echo News Issue #85 featured the Gthulhu project, highlighting our innovative work in the Linux scheduler space.
 

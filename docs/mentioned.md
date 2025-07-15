@@ -7,8 +7,9 @@
 ### Echo News #85
 **發布日期**: 2025年  
 **作者**: Bill Mulligan  
-**平台**: LinkedIn  
-**連結**: [Echo News #85](https://www.linkedin.com/pulse/echo-news-85-bill-mulligan-jcsgf/)
+**平台**: LinkedIn 和 eBPF.io 快報
+**連結**: [Echo News #85](https://www.linkedin.com/pulse/echo-news-85-bill-mulligan-jcsgf/) [https://ebpf.io/newsletter/](https://isovalent-9197153.hs-sites.com/echo-news-episode-84-ebpf-for-5g.-ciliumcon-cfp-closing-1)
+
 
 Echo News 第85期中提及了 Gthulhu 專案，介紹了我們在 Linux 調度器領域的創新工作。
 
