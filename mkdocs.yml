@@ -1,6 +1,8 @@
 site_name: Gthulhu
 site_description: Cloud-native workload optimization scheduler based on Linux Scheduler Extension
 site_url: https://gthulhu.github.io/
+repo_url: https://github.com/Gthulhu/Gthulhu
+edit_uri: https://github.com/Gthulhu/docs/blob/main/docs/
 
 nav:
   - Home: 
