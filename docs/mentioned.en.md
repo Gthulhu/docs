@@ -4,6 +4,12 @@ This page collects articles and coverage of the Gthulhu and SCX GoLand Core proj
 
 ## News Coverage
 
+### COSCUP 2025: Develop a Linux Scheduler using Golang!
+**Published**: August 2025  
+**Author**: Ian Chen
+**Platform**: COSCUP Official Website
+**Link**: [COSCUP 2025](https://pretalx.coscup.org/coscup-2025/talk/review/PVBJLQEF7XEEUKYK3BCLREQSCNNUC33E)
+
 ### Echo News #85
 **Published**: 2025  
 **Author**: Bill Mulligan  

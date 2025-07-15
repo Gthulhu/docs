@@ -4,6 +4,12 @@
 
 ## 新聞報導
 
+### COSCUP 2025：使用 Golang 開發 Linux Scheduler！
+**發布日期**: 2025年
+**作者**: Ian Chen（Gthulhu 創始人）
+**平台**: COSCUP Official Website
+**連結**: [COSCUP 2025](https://pretalx.coscup.org/coscup-2025/talk/review/PVBJLQEF7XEEUKYK3BCLREQSCNNUC33E)
+
 ### Echo News #85
 **發布日期**: 2025年  
 **作者**: Bill Mulligan  
