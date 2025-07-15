@@ -2,18 +2,22 @@
 
 本頁面收集了各種媒體、部落格和網站中提及 Gthulhu 和 SCX GoLand Core 專案的文章和報導。
 
-## 新聞報導
+## 會議演講
 
 ### COSCUP 2025：使用 Golang 開發 Linux Scheduler！
-**發布日期**: 2025年
-**作者**: Ian Chen（Gthulhu 創始人）
-**平台**: COSCUP Official Website
+
+**發布日期**: 2025年</br>
+**作者**: Ian Chen（Gthulhu 創始人）</br>
+**平台**: COSCUP Official Website</br>
 **連結**: [COSCUP 2025](https://pretalx.coscup.org/coscup-2025/talk/review/PVBJLQEF7XEEUKYK3BCLREQSCNNUC33E)
 
+## 新聞報導
+
 ### Echo News #85
-**發布日期**: 2025年  
-**作者**: Bill Mulligan  
-**平台**: LinkedIn 和 eBPF.io 快報
+
+**發布日期**: 2025年</br>
+**作者**: Bill Mulligan</br>
+**平台**: LinkedIn 和 eBPF.io 快報</br>
 **連結**: [Echo News #85](https://www.linkedin.com/pulse/echo-news-85-bill-mulligan-jcsgf/) [https://ebpf.io/newsletter/](https://isovalent-9197153.hs-sites.com/echo-news-episode-84-ebpf-for-5g.-ciliumcon-cfp-closing-1)
 
 

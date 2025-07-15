@@ -2,18 +2,22 @@
 
 This page collects articles and coverage of the Gthulhu and SCX GoLand Core projects from various media outlets, blogs, and websites.
 
-## News Coverage
+## Conference Talks
 
 ### COSCUP 2025: Develop a Linux Scheduler using Golang!
-**Published**: August 2025  
-**Author**: Ian Chen
-**Platform**: COSCUP Official Website
+
+**Published**: August 2025</br> 
+**Author**: Ian Chen (Founder of Gthulhu)</br>
+**Platform**: COSCUP Official Website</br>
 **Link**: [COSCUP 2025](https://pretalx.coscup.org/coscup-2025/talk/review/PVBJLQEF7XEEUKYK3BCLREQSCNNUC33E)
 
+## News Coverage
+
 ### Echo News #85
-**Published**: 2025  
-**Author**: Bill Mulligan  
-**Platform**: LinkedIn and eBPF.io Newsletter
+
+**Published**: 2025 </br>
+**Author**: Bill Mulligan</br>
+**Platform**: LinkedIn and eBPF.io Newsletter</br>
 **Link**: [Echo News #85](https://www.linkedin.com/pulse/echo-news-85-bill-mulligan-jcsgf/) [https://ebpf.io/newsletter/](https://isovalent-9197153.hs-sites.com/echo-news-episode-84-ebpf-for-5g.-ciliumcon-cfp-closing-1)
 
 Echo News Issue #85 featured the Gthulhu project, highlighting our innovative work in the Linux scheduler space.
