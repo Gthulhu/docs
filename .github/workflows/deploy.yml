@@ -64,6 +64,7 @@ jobs:
           echo "📊 Build statistics:"
           du -sh site/
           find site/ -name "*.html" | wc -l | xargs echo "HTML files generated:"
+          cp googlebab4e503b693d64f.html site/
           
       - name: 🧪 Test built site
         run: |
