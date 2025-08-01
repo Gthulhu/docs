@@ -39,6 +39,11 @@ Echo News 第85期中提及了 Gthulhu 專案，介紹了我們在 Linux 調度�
 **平台**: free5GC 官方部落格  
 **連結**: [Exploring sched_ext: BPF-Powered CPU Schedulers in the Linux Kernel](https://free5gc.org/blog/20250305/20250305/)
 
+### 文章三：Improving Network Performance with Custom eBPF-based Schedulers
+**發布日期**: July 25, 2025  
+**平台**: The free5GC Official Blog  
+**連結**: [Improving Network Performance with Custom eBPF-based Schedulers](https://free5gc.org/blog/20250726/)
+
 ---
 
 ## 社群反饋
