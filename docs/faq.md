@@ -16,7 +16,7 @@ grep -r "CONFIG_SCHED_CLASS_EXT" /boot/config-$(uname -r)
 zcat /proc/config.gz | grep "CONFIG_SCHED_CLASS_EXT"
 
 # 方法 3: 檢查 sched_ext 目錄
-ls /sys/kernel/sched_ext/ 2>/dev/null || echo "sched_ext 不支援"
+ls /sys/kernel/sched_ext/ 2>/dev/null
 ```
 
 如果輸出包含 `CONFIG_SCHED_CLASS_EXT=y`，表示您的核心支援 sched_ext。

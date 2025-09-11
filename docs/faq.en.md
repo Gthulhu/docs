@@ -16,7 +16,7 @@ grep -r "CONFIG_SCHED_CLASS_EXT" /boot/config-$(uname -r)
 zcat /proc/config.gz | grep "CONFIG_SCHED_CLASS_EXT"
 
 # Method 3: Check sched_ext directory
-ls /sys/kernel/sched_ext/ 2>/dev/null || echo "sched_ext not supported"
+ls /sys/kernel/sched_ext/ 2>/dev/null
 ```
 
 If the output contains `CONFIG_SCHED_CLASS_EXT=y`, your kernel supports sched_ext.
