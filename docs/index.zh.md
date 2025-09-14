@@ -26,6 +26,12 @@
     - **影音會議**: 確保視訊通話品質
     - **即時串流**: 減少延遲，提升串流品質
 
+## DEMO
+
+點擊下方連結觀看我們在 YouTube 上的 DEMO！
+
+[![IMAGE ALT TEXT HERE](https://github.com/Gthulhu/Gthulhu/raw/main/assets/preview.png){ width="200" }](https://www.youtube.com/watch?v=MfU64idQcHg)
+
 ## 架構設計
 
 這套調度器系統採用雙組件架構：

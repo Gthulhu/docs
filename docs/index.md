@@ -30,6 +30,12 @@ Welcome to the official documentation for **Gthulhu** and **SCX GoLand Core** - 
 
 </div>
 
+## DEMO
+
+Click the image below to see our DEMO on YouTube!
+
+[![IMAGE ALT TEXT HERE](https://github.com/Gthulhu/Gthulhu/raw/main/assets/preview.png){ width="200" }](https://www.youtube.com/watch?v=MfU64idQcHg)
+
 ## Overview
 
 ![Gthulhu Logo](https://raw.githubusercontent.com/Gthulhu/Gthulhu/main/assets/logo.png){ width="300" }
