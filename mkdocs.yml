@@ -87,3 +87,8 @@ markdown_extensions:
   - pymdownx.details
   - attr_list
   - md_in_html
+
+extra:
+  analytics:
+    provider: google
+    property: G-T0RWMB3KJM
