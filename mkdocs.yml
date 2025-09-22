@@ -12,6 +12,9 @@ nav:
     - Installation:
       - English: installation.en.md
       - 中文: installation.md
+    - k8s deployment:
+      - English: k8s.en.md
+      - 中文: k8s.md
     - How It Works:
       - English: how-it-works.en.md
       - 中文: how-it-works.md
