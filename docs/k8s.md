@@ -33,7 +33,7 @@ $ docker push 127.0.0.1:32000/gthulhu:latest
 
 ```sh
 $ cd chart
-$ helm install gthulhu gthulhu --namespace gthulhu --create-namespace
+$ helm install gthulhu gthulhu
 ```
 
 若沒有出現任何錯誤，使用以下命令理應可以看到 Gthulhu 的 Pod 已成功啟動：

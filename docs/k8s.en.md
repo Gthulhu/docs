@@ -33,7 +33,7 @@ Next, use the following commands to deploy Gthulhu to the Kubernetes cluster:
 
 ```sh
 $ cd chart
-$ helm install gthulhu gthulhu --namespace gthulhu --create-namespace
+$ helm install gthulhu gthulhu
 ```
 
 If no errors occur, you should be able to see that the Gthulhu pods have started successfully:
