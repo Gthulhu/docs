@@ -32,6 +32,21 @@
 
 [![IMAGE ALT TEXT HERE](https://github.com/Gthulhu/Gthulhu/raw/main/assets/preview.png){ width="200" }](https://www.youtube.com/watch?v=MfU64idQcHg)
 
+## Product Roadmap
+
+```mermaid
+timeline
+        title Gthulhu 2025 Roadmap
+        section 2025 Q1 - Q2 <br> Gthulhu -- bare metal 
+          scx_goland (qumun) : ☑️  7x24 test : ☑️  CI/CD pipeline
+          Gthulhu : ☑️  CI/CD pipeline : ☑️  Official doc
+          K8s integration : ☑️  Helm chart support : ☑️  API Server
+        section 2025 Q3 - Q4 <br> Cloud-Native Scheduling Solution
+          Gthulhu : ☑️ plugin mode : ☑️  Running on Ubuntu 25.04
+          K8s integration : ☑️  Container image release : ☑️  MCP tool : Multiple node management system
+          Release 1 : ☑️  R1 DEMO (free5GC) : ☑️  R1 DEMO (MCP) : R1 DEMO (Agent Builder)
+```
+
 ## 架構設計
 
 這套調度器系統採用雙組件架構：
