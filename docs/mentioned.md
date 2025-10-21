@@ -13,6 +13,16 @@
 
 ## 新聞報導
 
+### Echo News #93
+
+**發布日期**: 2025年</br>
+**作者**: Bill Mulligan</br>
+**平台**: LinkedIn</br>
+**連結**: [Echo News #93](https://www.linkedin.com/pulse/echo-news-93-bill-mulligan-fnxhf/?trackingId=r4LMwQRoR%2BWppouvcYeVow%3D%3D)
+
+
+Echo News 第93期中提及了 Gthulhu MCP 專案，介紹了我們在 Linux 調度器領域的創新工作。
+
 ### Echo News #85
 
 **發布日期**: 2025年</br>

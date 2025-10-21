@@ -13,6 +13,14 @@ This page collects articles and coverage of the Gthulhu and SCX GoLand Core proj
 
 ## News Coverage
 
+### Echo News #93
+
+**Published**: 2025 </br>
+**Author**: Bill Mulligan</br>
+**Platform**: LinkedIn</br>
+**Link**: [Echo News #93](https://www.linkedin.com/pulse/echo-news-93-bill-mulligan-fnxhf/?trackingId=r4LMwQRoR%2BWppouvcYeVow%3D%3D)
+Echo News Issue #93 featured the Gthulhu' MCP server project, highlighting our innovative work in the Linux scheduler space.
+
 ### Echo News #85
 
 **Published**: 2025 </br>
