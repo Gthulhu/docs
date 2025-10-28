@@ -1,4 +1,4 @@
-# 媒體報導與提及
+# @ 任何提及
 
 本頁面收集了各種媒體、部落格和網站中提及 Gthulhu 和 SCX GoLand Core 專案的文章和報導。
 
@@ -12,6 +12,13 @@
 **連結**: [COSCUP 2025](https://pretalx.coscup.org/coscup-2025/talk/review/PVBJLQEF7XEEUKYK3BCLREQSCNNUC33E)
 
 ## 新聞報導
+
+### Jdon
+
+**發布日期**: 2025年</br>
+**作者**: banq</br>
+**平台**: Jdon Blog</br>
+**連結**: [www.jdon.com](https://www.jdon.com/82541-Gthulhu-Go-Scheduler.html)
 
 ### Echo News #93
 
@@ -71,10 +78,10 @@ Echo News 第85期中提及了 Gthulhu 專案，介紹了我們在 Linux 調度�
 
 ### BibTeX 格式
 ```bibtex
-@misc{gthulhu2024,
+@misc{gthulhu2025,
   title={Gthulhu: A Cloud-Native Linux Scheduler based on sched\_ext},
   author={Gthulhu Development Team},
-  year={2024},
+  year={2025},
   url={https://github.com/Gthulhu/Gthulhu},
   note={開源 Linux 調度器專案}
 }
@@ -82,12 +89,12 @@ Echo News 第85期中提及了 Gthulhu 專案，介紹了我們在 Linux 調度�
 
 ### IEEE 格式
 ```
-Gthulhu Development Team, "Gthulhu: A Cloud-Native Linux Scheduler based on sched_ext," 2024. [Online]. Available: https://github.com/Gthulhu/Gthulhu
+Gthulhu Development Team, "Gthulhu: A Cloud-Native Linux Scheduler based on sched_ext," 2025. [Online]. Available: https://github.com/Gthulhu/Gthulhu
 ```
 
 ### APA 格式
 ```
-Gthulhu Development Team. (2024). Gthulhu: A Cloud-Native Linux Scheduler based on sched_ext. Retrieved from https://github.com/Gthulhu/Gthulhu
+Gthulhu Development Team. (2025). Gthulhu: A Cloud-Native Linux Scheduler based on sched_ext. Retrieved from https://github.com/Gthulhu/Gthulhu
 ```
 
 ---

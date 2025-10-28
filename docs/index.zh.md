@@ -1,30 +1,32 @@
-# Gthulhu & SCX GoLand Core
+<a href="https://landscape.cncf.io/?item=provisioning--automation-configuration--gthulhu" target="_blank"><img src="https://img.shields.io/badge/CNCF%20Landscape-5699C6?style=for-the-badge&logo=cncf&label=cncf" alt="cncf landscape" /></a>
+
+<img src="https://raw.githubusercontent.com/Gthulhu/Gthulhu/main/assets/logo.png" width="250" alt="LOGO">
+
 
 歡迎來到 Gthulhu 和 SCX GoLand Core 的官方文檔！
 
-## 專案概述
+## 📰 Latest News
 
-**Gthulhu** 和 **SCX GoLand Core** 是基於 Linux Scheduler Extension (sched_ext) 技術的高效能調度器解決方案，專為雲原生環境和低延遲應用程式最佳化而設計。
+!!! success "Gthulhu 加入 CNCF Landscape"
+    Gthulhu 現已成為 [CNCF (Cloud Native Computing Foundation) Landscape](https://landscape.cncf.io/?item=provisioning--automation-configuration--gthulhu) 的一部分，加入雲原生技術生態系統。
 
-![Gthulhu Logo](https://raw.githubusercontent.com/Gthulhu/Gthulhu/main/assets/logo.png){: style="width:300px"}
+!!! success "Gthulhu 加入 eBPF Application Landscape"
+    Gthulhu 已被納入 [eBPF Application Landscape](https://ebpf.io/applications/)，被認可為創新的基於 eBPF 的調度解決方案。
 
-## 主要特色
+## 概覽
+Gthulhu 是為雲原生生態打造的下一代調度器，以 Go 語言開發，並由 qumun 框架驅動。
 
-=== "🚀 高效能調度"
-    - **虛擬執行時間 (vruntime) 調度**: 基於公平調度原理，確保資源合理分配
-    - **動態時間片調整**: 根據工作負載特性自動調整執行時間
-    - **CPU 拓撲感知**: 智慧考慮 CPU 架構進行任務分配
+名稱 Gthulhu 靈感來自神話生物克蘇魯（Cthulhu），其多條觸手象徵掌舵與掌控。正如觸手可抓握與引導，Gthulhu 代表在現代分散式系統的複雜世界裡掌舵前行的能力——就像 Kubernetes 以船舵作為其徽章一樣。
 
-=== "⚡ 低延遲最佳化"
-    - **延遲敏感任務優先**: 自動識別並優先處理互動式工作負載
-    - **自願上下文切換最佳化**: 根據任務行為提供優先級提升
-    - **自動閒置 CPU 選擇**: 智慧分配任務到最適合的 CPU 核心
+字首「G」源自本專案的核心語言 Go，突顯其技術基礎與對開發者友善的設計。
 
-=== "🎯 應用場景"
-    - **互動式應用程式**: 桌面環境、GUI 應用程式
-    - **遊戲**: 提供流暢的遊戲體驗
-    - **影音會議**: 確保視訊通話品質
-    - **即時串流**: 減少延遲，提升串流品質
+在底層，Gthulhu 運行於 qumun 框架之上（qumun 在台灣原住民族布農語中意為「心臟」），呼應調度器作為作業系統「心臟」的角色。這不僅強調其在協調工作負載上的核心地位，也向全球開源社群分享一部分台灣原住民族文化。
+
+## 靈感來源
+本專案受 Andrea Righi 的演講「Crafting a Linux kernel scheduler in Rust」啟發。於是我花時間重寫 scx_rustland，命名為 qumun（scx_goland）。在完成基礎設施架構後，我重新定義了專案使命，讓 Gthulhu 成為面向雲原生工作負載的通用調度解決方案。
+
+## 功能與價值
+Gthulhu 簡化了從使用者意圖到調度策略的轉換。使用者可以使用機器友善的格式（例如 JSON），或透過具備 MCP 的 AI 代理與 Gthulhu 溝通，之後 Gthulhu 會根據您的輸入為特定工作負載進行最佳化。
 
 ## DEMO
 

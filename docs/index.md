@@ -1,34 +1,33 @@
-# Gthulhu
+<a href="https://landscape.cncf.io/?item=provisioning--automation-configuration--gthulhu" target="_blank"><img src="https://img.shields.io/badge/CNCF%20Landscape-5699C6?style=for-the-badge&logo=cncf&label=cncf" alt="cncf landscape" /></a>
+
+<img src="https://raw.githubusercontent.com/Gthulhu/Gthulhu/main/assets/logo.png" width="250" alt="LOGO">
 
 Welcome to the official documentation for **Gthulhu** and **SCX GoLand Core** - advanced Linux schedulers designed to optimize cloud-native workloads using the Linux Scheduler Extension (sched_ext) framework.
 
-<div class="grid cards" markdown>
+## 📰 Latest News
 
--   **High Performance**
+!!! success "Gthulhu joins CNCF Landscape"
+    Gthulhu is now part of the [CNCF (Cloud Native Computing Foundation) Landscape](https://landscape.cncf.io/?item=provisioning--automation-configuration--gthulhu), joining the ecosystem of cloud-native technologies.
 
-    ---
+!!! success "Gthulhu joins eBPF Application Landscape"
+    Gthulhu has been added to the [eBPF Application Landscape](https://ebpf.io/applications/), recognized as an innovative eBPF-based scheduling solution.
 
-    Microsecond-level scheduling latency and intelligent task prioritization for modern applications
 
--   **Cloud Native**
 
-    ---
+## Overview
+Gthulhu is a next-generation scheduler designed for the cloud-native ecosystem, built with Golang and powered by the qumun framework.
 
-    Optimized for containerized environments, microservices, and distributed workloads
+The name Gthulhu is inspired by Cthulhu, a mythical creature known for its many tentacles. Just as tentacles can grasp and steer, Gthulhu symbolizes the ability to take the helm and navigate the complex world of modern distributed systems — much like how Kubernetes uses a ship’s wheel as its emblem.
 
--   **Topology Aware**
+The prefix “G” comes from Golang, the language at the core of this project, highlighting both its technical foundation and its developer-friendly design.
 
-    ---
+Underneath, Gthulhu runs on the qumun framework (qumun means “heart” in the Bunun language, an Indigenous people of Taiwan), reflecting the role of a scheduler as the beating heart of the operating system. This not only emphasizes its central importance in orchestrating workloads but also shares a piece of Taiwan’s Indigenous culture with the global open-source community.
 
-    CPU cache hierarchy and NUMA awareness for optimal performance on modern hardware
+## Inspiration
+The project is inspired by the Andrea Righi's talk "Crafting a Linux kernel scheduler in Rust". So I spent sometime to re-implement the scx_rustland, which is called qumun (scx_goland). After I done all of infrastructure setup, I redefine the project's mission, I make Gthulhu to be a generic scheduling solution dedicated to cloud-native workloads.
 
--   **Extensible**
-
-    ---
-
-    User-space scheduler framework allowing custom scheduling policies
-
-</div>
+## What it does
+Gthulhu simplfies the transformation from user's intents to scheduling policies. User can use machine friendly language (e.g. json) or use AI agent with MCP to communicate with Gthulhu, then Gthulhu will optimize specific workloads based on what you gave!
 
 ## DEMO
 
@@ -50,15 +49,6 @@ timeline
           K8s integration : ☑️  Container image release : ☑️  MCP tool : Multiple node management system
           Release 1 : ☑️  R1 DEMO (free5GC) : ☑️  R1 DEMO (MCP) : R1 DEMO (Agent Builder)
 ```
-
-## Overview
-
-![Gthulhu Logo](https://raw.githubusercontent.com/Gthulhu/Gthulhu/main/assets/logo.png){ width="300" }
-
-Gthulhu optimizes cloud-native workloads using the Linux Scheduler Extension for different application scenarios. The scheduler consists of two main components:
-
-1. **BPF Component**: Implements low-level sched-ext functionalities in kernel space
-2. **Go Component**: User-space scheduler implementing actual scheduling policies with [scx_goland_core](https://github.com/Gthulhu/scx_goland_core)
 
 ## Architecture
 
