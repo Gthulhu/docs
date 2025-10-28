@@ -71,7 +71,7 @@ jobs:
         run: |
           echo "🔍 Testing built site structure..."
           test -f site/index.html || (echo "❌ index.html not found" && exit 1)
-          test -f site/index.zh/index.html || (echo "❌ English index not found" && exit 1)
+          test -f site/zh/index.html || (echo "❌ English index not found" && exit 1)
           test -f site/sitemap.xml || (echo "❌ sitemap.xml not found" && exit 1)
           echo "✅ Site structure validated"
           
