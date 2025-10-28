@@ -6,12 +6,7 @@ Welcome to contribute to the Gthulhu project! This guide will help you understan
 
 ### Code of Conduct
 
-Please follow our code of conduct when participating in the project:
-
-- 🤝 **Respect Others**: Treat all participants with kindness
-- 💬 **Constructive Communication**: Provide constructive opinions and suggestions
-- 🌍 **Embrace Diversity**: Welcome contributors from different backgrounds
-- 📚 **Learn Together**: Maintain an open learning attitude
+We follow the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/main/code-of-conduct.md).
 
 ### Ways to Contribute
 
