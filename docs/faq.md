@@ -1,29 +1,29 @@
-# 常見問題
+# Frequently Asked Questions
 
-本頁面收集了 Gthulhu 和 SCX GoLand Core 使用過程中的常見問題與解答。
+This page collects common questions and answers encountered when using Gthulhu and Qumun.
 
-## 安裝相關問題
+## Installation Related Questions
 
-### Q: 如何確認我的核心支援 sched_ext？
+### Q: How can I confirm my kernel supports sched_ext?
 
-A: 您可以通過以下方式檢查：
+A: You can check using the following methods:
 
 ```bash
-# 方法 1: 檢查核心配置
+# Method 1: Check kernel configuration
 grep -r "CONFIG_SCHED_CLASS_EXT" /boot/config-$(uname -r)
 
-# 方法 2: 檢查 /proc/config.gz
+# Method 2: Check /proc/config.gz
 zcat /proc/config.gz | grep "CONFIG_SCHED_CLASS_EXT"
 
-# 方法 3: 檢查 sched_ext 目錄
+# Method 3: Check sched_ext directory
 ls /sys/kernel/sched_ext/ 2>/dev/null
 ```
 
-如果輸出包含 `CONFIG_SCHED_CLASS_EXT=y`，表示您的核心支援 sched_ext。
+If the output contains `CONFIG_SCHED_CLASS_EXT=y`, your kernel supports sched_ext.
 
-### Q: 編譯時出現 "libbpf not found" 錯誤該怎麼辦？
+### Q: What should I do when getting "libbpf not found" error during compilation?
 
-A: 這通常是因為 libbpf 沒有正確安裝。請按照以下步驟解決：
+A: This is usually because libbpf is not properly installed. Please follow these steps to resolve:
 
 ```bash
 # Ubuntu/Debian
@@ -32,166 +32,166 @@ sudo apt install libbpf-dev
 # CentOS/RHEL/Fedora
 sudo dnf install libbpf-devel
 
-# 或者手動編譯 libbpf
+# Or manually compile libbpf
 git clone https://github.com/libbpf/libbpf.git
 cd libbpf/src
 make
 sudo make install
 ```
 
-### Q: 為什麼需要 Clang 17+？
+### Q: Why is Clang 17+ required?
 
-A: Clang 17+ 提供了更完整的 BPF 支援，包括：
+A: Clang 17+ provides more complete BPF support, including:
 
-- 更好的 BPF CO-RE (Compile Once, Run Everywhere) 支援
-- 最新的 BPF 指令集支援
-- 更穩定的 BPF 程式編譯
+- Better BPF CO-RE (Compile Once, Run Everywhere) support
+- Latest BPF instruction set support
+- More stable BPF program compilation
 
-如果您的系統沒有 Clang 17+，可以這樣安裝：
+If your system doesn't have Clang 17+, you can install it like this:
 
 ```bash
 # Ubuntu/Debian
 sudo apt install clang-17
 
-# 設定環境變數
+# Set environment variables
 export CC=clang-17
 export CXX=clang++-17
 ```
 
-## 執行相關問題
+## Runtime Related Questions
 
-### Q: 執行時提示 "Operation not permitted" 錯誤
+### Q: Getting "Operation not permitted" error when running
 
-A: 這是權限問題，BPF 程式載入需要 root 權限：
+A: This is a permission issue. BPF program loading requires root privileges:
 
 ```bash
-# 正確的執行方式
+# Correct way to run
 sudo ./main
 
-# 或者使用 Docker
+# Or use Docker
 docker run --privileged=true --pid host --rm gthulhu:latest /gthulhu/main
 ```
 
-### Q: 調度器啟動後系統變慢了怎麼辦？
+### Q: What to do if the system becomes slow after starting the scheduler?
 
-A: 這可能是由於以下原因：
+A: This might be due to the following reasons:
 
-1. **調度參數不適合您的工作負載**：
+1. **Scheduling parameters not suitable for your workload**:
 ```bash
-# 檢查系統負載
+# Check system load
 top
 htop
 
-# 檢查上下文切換頻率
+# Check context switch frequency
 vmstat 1
 ```
 
-2. **記憶體不足**：
+2. **Insufficient memory**:
 ```bash
-# 檢查記憶體使用
+# Check memory usage
 free -h
 cat /proc/meminfo
 ```
 
-3. **BPF 程式性能問題**：
+3. **BPF program performance issues**:
 ```bash
-# 檢查 BPF 程式統計
+# Check BPF program statistics
 sudo bpftool prog show
 sudo bpftool prog profile
 ```
 
-**解決方案**：
-- 暫停調度器：`sudo pkill -f "./main"`  
-- 檢查系統日誌：`dmesg | tail -50`
-- 調整調度參數或回報問題
+**Solutions**:
+- Stop the scheduler: `sudo pkill -f "./main"`  
+- Check system logs: `dmesg | tail -50`
+- Adjust scheduling parameters or report the issue
 
-### Q: 如何停止調度器？
+### Q: How to stop the scheduler?
 
-A: 您可以使用以下方式停止調度器：
+A: You can stop the scheduler using the following methods:
 
 ```bash
-# 方法 1: Ctrl+C (如果在前景執行)
+# Method 1: Ctrl+C (if running in foreground)
 ^C
 
-# 方法 2: 發送 SIGTERM 信號
+# Method 2: Send SIGTERM signal
 sudo pkill -TERM -f "./main"
 
-# 方法 3: 發送 SIGINT 信號
+# Method 3: Send SIGINT signal
 sudo pkill -INT -f "./main"
 
-# 方法 4: 強制終止 (不推薦)
+# Method 4: Force kill (not recommended)
 sudo pkill -KILL -f "./main"
 ```
 
-## 性能相關問題
+## Performance Related Questions
 
-### Q: 如何監控調度器性能？
+### Q: How to monitor scheduler performance?
 
-A: 您可以使用多種工具監控調度器性能：
+A: You can use various tools to monitor scheduler performance:
 
-1. **系統工具**：
+1. **System tools**:
 ```bash
-# 監控 CPU 使用率
+# Monitor CPU usage
 htop
 
-# 監控上下文切換
+# Monitor context switches
 vmstat 1
 
-# 監控調度延遲
+# Monitor scheduling latency
 perf sched record -- sleep 10
 perf sched latency
 ```
 
-2. **BPF 工具**：
+2. **BPF tools**:
 ```bash
-# 檢查 BPF 程式狀態
+# Check BPF program status
 sudo bpftool prog list | grep sched
 
-# 檢查 BPF map 內容
+# Check BPF map contents
 sudo bpftool map dump name task_info_map
 ```
 
-3. **調度器內建監控**：
+3. **Built-in scheduler monitoring**:
 ```bash
-# 查看調度器日誌
+# View scheduler logs
 journalctl -f -u gthulhu
 
-# 查看 BPF 追蹤訊息
+# View BPF trace messages
 sudo cat /sys/kernel/debug/tracing/trace_pipe
 ```
 
-### Q: 調度器相比 CFS 有什麼優勢？
+### Q: What advantages does the scheduler have compared to CFS?
 
-A: Gthulhu 調度器的主要優勢：
+A: Main advantages of Gthulhu scheduler:
 
-| 特性 | CFS | Gthulhu |
-|------|-----|---------|
-| 延遲最佳化 | 基本 | 專業化 |
-| 任務分類 | 統一處理 | 自動分類 |
-| CPU 拓撲感知 | 有限 | 完整支援 |
-| 動態調整 | 靜態參數 | 即時調整 |
-| 使用者空間擴展 | 不支援 | 完全支援 |
+| Feature | CFS | Gthulhu |
+|---------|-----|---------|
+| Latency Optimization | Basic | Specialized |
+| Task Classification | Unified processing | Automatic classification |
+| CPU Topology Awareness | Limited | Complete support |
+| Dynamic Adjustment | Static parameters | Real-time adjustment |
+| User-space Extension | Not supported | Fully supported |
 
-### Q: 如何調整調度器參數？
+### Q: How to adjust scheduler parameters?
 
-A: 目前支援的調整方式：
+A: Currently supported adjustment methods:
 
-1. **環境變數**：
+1. **Environment variables**:
 ```bash
 export GTHULHU_DEBUG=true
 export GTHULHU_LOG_LEVEL=DEBUG
 sudo -E ./main
 ```
 
-2. **編譯時參數** (修改 `main.bpf.c`)：
+2. **Compile-time parameters** (modify `main.bpf.c`):
 ```c
-// 調整基礎時間片
-#define BASE_SLICE_NS    3000000ULL  // 3ms 而不是 5ms
+// Adjust base time slice
+#define BASE_SLICE_NS    3000000ULL  // 3ms instead of 5ms
 ```
 
-3. **執行時 API** (計劃中)：
+3. **Runtime API** (planned):
 ```go
-// 未來將支援動態調整
+// Future support for dynamic adjustment
 params := &SchedulingParams{
     BaseSliceNs: 3000000,
     LatencyFactor: 1.5,
@@ -199,112 +199,112 @@ params := &SchedulingParams{
 UpdateSchedulingParams(params)
 ```
 
-## 除錯相關問題
+## Debugging Related Questions
 
-### Q: 如何開啟調試模式？
+### Q: How to enable debug mode?
 
-A: 您可以通過以下方式開啟調試：
+A: You can enable debugging through the following methods:
 
-1. **環境變數**：
+1. **Environment variables**:
 ```bash
 export GTHULHU_DEBUG=true
 export GTHULHU_LOG_LEVEL=DEBUG
 sudo -E ./main
 ```
 
-2. **BPF 追蹤**：
+2. **BPF tracing**:
 ```bash
-# 終端 1: 啟動調度器
+# Terminal 1: Start scheduler
 sudo ./main
 
-# 終端 2: 查看 BPF 追蹤
+# Terminal 2: View BPF traces
 sudo cat /sys/kernel/debug/tracing/trace_pipe
 ```
 
-3. **系統日誌**：
+3. **System logs**:
 ```bash
-# 查看核心日誌
+# View kernel logs
 dmesg -w
 
-# 查看 systemd 日誌
+# View systemd logs
 journalctl -f
 ```
 
-### Q: 遇到 BPF 驗證器錯誤怎麼辦？
+### Q: What to do when encountering BPF verifier errors?
 
-A: BPF 驗證器錯誤通常表示程式有問題：
+A: BPF verifier errors usually indicate program issues:
 
-1. **檢查錯誤訊息**：
+1. **Check error messages**:
 ```bash
-# 查看詳細錯誤
+# View detailed errors
 dmesg | grep -i bpf
 ```
 
-2. **常見問題**：
-   - **無界迴圈**：確保所有迴圈都有明確的退出條件
-   - **記憶體越界**：檢查陣列存取是否在範圍內
-   - **指標使用**：確保指標在使用前經過 NULL 檢查
+2. **Common issues**:
+   - **Unbounded loops**: Ensure all loops have clear exit conditions
+   - **Memory out of bounds**: Check array accesses are within range
+   - **Pointer usage**: Ensure pointers are NULL-checked before use
 
-3. **驗證 BPF 程式**：
+3. **Verify BPF program**:
 ```bash
-# 使用 bpftool 驗證
+# Use bpftool to verify
 sudo bpftool prog load main.bpf.o /sys/fs/bpf/test_prog
 ```
 
-### Q: 如何回報問題？
+### Q: How to report issues?
 
-A: 如果遇到問題，請按照以下步驟：
+A: If you encounter problems, please follow these steps:
 
-1. **收集系統資訊**：
+1. **Collect system information**:
 ```bash
-# 系統資訊
+# System information
 uname -a
 cat /etc/os-release
 
-# 核心版本和配置
+# Kernel version and configuration
 uname -r
 grep CONFIG_SCHED_CLASS_EXT /boot/config-$(uname -r)
 
-# Go 版本
+# Go version
 go version
 
-# Clang 版本
+# Clang version
 clang --version
 ```
 
-2. **收集錯誤日誌**：
+2. **Collect error logs**:
 ```bash
-# 調度器日誌
+# Scheduler logs
 sudo ./main 2>&1 | tee gthulhu.log
 
-# 系統日誌
+# System logs
 dmesg > dmesg.log
 journalctl --since "1 hour ago" > journal.log
 ```
 
-3. **在 GitHub 提交 Issue**：
-   - 前往 [Gthulhu Issues](https://github.com/Gthulhu/Gthulhu/issues)
-   - 選擇適合的 Issue 模板
-   - 附上系統資訊和錯誤日誌
-   - 描述重現步驟
+3. **Submit GitHub Issue**:
+   - Go to [Gthulhu Issues](https://github.com/Gthulhu/Gthulhu/issues)
+   - Choose appropriate issue template
+   - Attach system information and error logs
+   - Describe reproduction steps
 
-## 開發相關問題
+## Development Related Questions
 
-### Q: 如何參與開發？
+### Q: How to participate in development?
 
-A: 歡迎參與開發！請參考：
+A: Welcome to participate in development! Please refer to:
 
-1. **查看貢獻指南**：[contributing.md](contributing.md)
-2. **了解程式碼結構**：
+1. **View contributing guide**: [contributing.md](contributing.md)
+2. **Understand code structure**:
 ```
 Gthulhu/
-├── main.go              # 主程式
-├── main.bpf.c          # BPF 程式
-├── internal/sched/     # 調度邏輯
-└── api/               # API 服務
+├── main.go              # Main program
+├── main.bpf.c          # BPF program
+├── internal/sched/     # Scheduling logic
+└── api/               # API services
 ```
 
-3. **設定開發環境**：
+3. **Set up development environment**:
 ```bash
 git clone https://github.com/Gthulhu/Gthulhu.git
 cd Gthulhu
@@ -313,86 +313,86 @@ make build
 make test
 ```
 
-### Q: 如何新增自訂的調度策略？
+### Q: How to add custom scheduling policies?
 
-A: 您可以通過以下方式客製化：
+A: You can customize through the following methods:
 
-1. **修改 BPF 程式** (`main.bpf.c`)：
+1. **Modify BPF program** (`main.bpf.c`):
 ```c
-// 新增自訂的 CPU 選擇邏輯
+// Add custom CPU selection logic
 s32 custom_select_cpu(struct task_struct *p, s32 prev_cpu, u64 wake_flags) {
-    // 您的邏輯
+    // Your logic
     return selected_cpu;
 }
 ```
 
-2. **修改 Go 程式** (`main.go`)：
+2. **Modify Go program** (`main.go`):
 ```go
-// 新增自訂的任務處理邏輯
+// Add custom task handling logic
 func handleCustomTask(taskInfo *TaskInfo) {
-    // 您的邏輯
+    // Your logic
 }
 ```
 
-3. **使用 SCX GoLand Core API**：
+3. **Use Qumun API**:
 ```go
-// 實作 CustomScheduler 介面
+// Implement CustomScheduler interface
 type MyScheduler struct{}
 
 func (s *MyScheduler) ScheduleTask(task *Task) *ScheduleDecision {
-    // 您的調度邏輯
+    // Your scheduling logic
     return decision
 }
 ```
 
-## 兼容性問題
+## Compatibility Issues
 
-### Q: 支援哪些 Linux 發行版？
+### Q: Which Linux distributions are supported?
 
-A: 理論上支援所有具備以下條件的發行版：
+A: Theoretically supports all distributions with the following conditions:
 
-- **核心版本**: 6.12+
-- **sched_ext 支援**: 已啟用
-- **架構**: x86_64
+- **Kernel version**: 6.12+
+- **sched_ext support**: Enabled
+- **Architecture**: x86_64
 
-**已測試的發行版**：
+**Tested distributions**:
 - Ubuntu 24.04+
 - Fedora 39+
-- Arch Linux (最新)
+- Arch Linux (latest)
 
-**計劃支援**：
+**Planned support**:
 - CentOS/RHEL 9+
 - openSUSE Tumbleweed
 - Debian 13+
 
-### Q: 能在容器中執行嗎？
+### Q: Can it run in containers?
 
-A: 可以，但需要特殊權限：
+A: Yes, but requires special permissions:
 
 ```bash
-# Docker 執行
+# Docker execution
 docker run --privileged=true --pid host --rm gthulhu:latest
 
-# Podman 執行
+# Podman execution
 podman run --privileged --pid host --rm gthulhu:latest
 
-# Kubernetes 執行 (需要特殊配置)
-# 請參考 examples/kubernetes/ 目錄
+# Kubernetes execution (requires special configuration)
+# Please refer to examples/kubernetes/ directory
 ```
 
-### Q: 與其他調度器衝突嗎？
+### Q: Does it conflict with other schedulers?
 
-A: Gthulhu 會替換系統預設調度器，因此：
+A: Gthulhu will replace the system default scheduler, therefore:
 
-- **不能**與其他 sched_ext 調度器同時執行
-- **不會**影響即時調度類別 (SCHED_FIFO, SCHED_RR)
-- **會**替換 CFS 調度器的功能
+- **Cannot** run simultaneously with other sched_ext schedulers
+- **Will not** affect real-time scheduling classes (SCHED_FIFO, SCHED_RR)
+- **Will** replace CFS scheduler functionality
 
 ---
 
-!!! question "問題沒有解決？"
-    如果您的問題沒有在這裡找到答案，請：
+!!! question "Problem not resolved?"
+    If your problem is not answered here, please:
     
-    1. 查看 [GitHub Issues](https://github.com/Gthulhu/Gthulhu/issues)
-    2. 搜尋現有的問題和解答
-    3. 如果沒有找到，請建立新的 Issue
+    1. Check [GitHub Issues](https://github.com/Gthulhu/Gthulhu/issues)
+    2. Search existing problems and solutions
+    3. If not found, please create a new issue

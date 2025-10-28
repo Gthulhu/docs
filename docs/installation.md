@@ -1,49 +1,50 @@
-# 安裝指南
+# Installation Guide
 
-本指南將協助您完成 Gthulhu 和 SCX GoLand Core 的安裝與設定。
+This guide helps you install and configure Gthulhu and Qumun.
 
-## 系統需求
+## System Requirements
 
-### 硬體需求
+### Hardware Requirements
 
-- **CPU**: x86_64 架構處理器
-- **記憶體**: 至少 4GB RAM
-- **儲存空間**: 至少 10GB 可用空間
+- CPU: x86_64 architecture processor
+- Memory: At least 4GB RAM
+- Storage: At least 10GB free space
 
-### 軟體需求
+### Software Requirements
 
-!!! warning "核心版本需求"
-    **Linux 核心 6.12+ 且支援 sched_ext** 是必要條件。請確認您的核心版本符合需求。
+!!! warning "Kernel Version Requirement"
+    Linux Kernel 6.12+ with sched_ext enabled is required. Please make sure your kernel meets this requirement.
 
-#### 必要套件
+#### Required Packages
 
-| 套件 | 版本需求 | 用途 |
-|------|----------|------|
-| Go | 1.22+ | 使用者空間調度器開發 |
-| LLVM/Clang | 17+ | BPF 程式編譯 |
-| libbpf | 最新版本 | BPF 程式庫 |
-| make | - | 建置工具 |
-| git | - | 版本控制 |
+| Package | Version Requirement | Purpose |
+|--------|---------------------|---------|
+| Go | 1.22+ | User-space scheduler development |
+| LLVM/Clang | 17+ | BPF program compilation |
+| libbpf | Latest | BPF library |
+| make | - | Build tool |
+| git | - | Version control |
 
-#### 檢查核心支援
+#### Check Kernel Support
 
 ```bash
-# 檢查核心版本
+# Check kernel version
 uname -r
 
-# 檢查 sched_ext 支援
+# Check sched_ext support
 grep -r "CONFIG_SCHED_CLASS_EXT" /boot/config-$(uname -r) || \
 cat /proc/config.gz | gunzip | grep "CONFIG_SCHED_CLASS_EXT"
 
-# 檢查 BPF 支援
+# Check BPF support
 grep -r "CONFIG_BPF" /boot/config-$(uname -r) | head -5
 ```
 
-## 在 Ubuntu 25.04 上安裝 Gthulhu
-​
-為了節省各位的時間，我們直接跳過編譯 kernel 與安裝 kernel 的過程，使用[直接支援 sched_ext 的 Ubuntu 25.04 ](https://canonical.com/blog/canonical-releases-ubuntu-25-04-plucky-puffin)。
-​
-讀者可以直接使用以下腳本安裝必要的套件：
+## Install Gthulhu on Ubuntu 25.04
+
+To save time, we skip kernel compilation/installation and use Ubuntu 25.04 which directly supports sched_ext:
+https://canonical.com/blog/canonical-releases-ubuntu-25-04-plucky-puffin
+
+Use the following script to install required packages:
 
 ```sh
 sudo apt-get update
@@ -67,26 +68,26 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source $HOME/.cargo/env
 ```
 
-這些套件包含了所有編譯 scx 的必要套件。
-​
-在編譯 Gthulhu 之前，我們還需要安裝 golang：
+These packages include everything needed to build scx.
+
+Before building Gthulhu, install Golang:
 
 ```sh
 wget https://go.dev/dl/go1.24.2.linux-amd64.tar.gz
 sudo tar -C /usr/local -xzf go1.24.2.linux-amd64.tar.gz
 ```
-​
-新增以下內容至 `~/.profile`：
+
+Add the following to ~/.profile:
 
 ```sh
 export GOROOT=/usr/local/go
 export GOPATH=$HOME/go
 export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
 ```
-​
-新增後，記得使用 `source ~/.profile` 讓變更的內容生效。
-​
-安裝完必要套件後，安裝 Gthulhu：
+
+After adding, run source ~/.profile to apply the changes.
+
+After the prerequisites are installed, install Gthulhu:
 
 ```sh
 git clone https://github.com/Gthulhu/Gthulhu.git
@@ -104,18 +105,18 @@ make
 cd ..
 make
 ```
-​
-編譯完成後，Gthulhu 理應能順利執行在你的系統上：
-​
+
+After compilation, Gthulhu should run successfully on your system:
+
 ![image](https://hackmd.io/_uploads/Sy0reSVige.png)
-​
-我們可以觀察 Gthulhu 的輸出得知目前已有多少任務是透過 Gthulhu 進行調度的。
 
-## 常見問題排解
+You can observe Gthulhu’s output to see how many tasks are currently being scheduled by Gthulhu.
 
-### 問題一：`undefined reference to eu_search_tree_init`
-​
-如果你遇到了類似的問題，是因為目前系統使用的是 elfutils 版的 libelf，你可以自行下載與編譯 libelf 來解決這個問題：
+## Troubleshooting
+
+### Issue 1: `undefined reference to eu_search_tree_init`
+
+If you encounter this, it’s because the system is using the elfutils version of libelf. You can download and compile libelf yourself to resolve it:
 ```sh
 sudo apt remove --purge elfutils libelf-dev
 cd ~
@@ -124,24 +125,24 @@ cd libelf
 make
 sudo make install
 ```
-​
-### 問題二：`ERROR: Program 'clang' not found or not executable`
-​
-如果你在執行 `meson setup build --prefix ~` 命令時遇到該問題，可以嘗試以下命令：
+
+### Issue 2: `ERROR: Program 'clang' not found or not executable`
+
+If you see this when running meson setup build --prefix ~, try:
 ```sh
 sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-17 100
 sudo update-alternatives --install /usr/bin/llvm-strip llvm-strip /usr/bin/llvm-strip-17 100
 ```
 
-## 下一步
+## Next Steps
 
-安裝完成後，您可以：
+After installation, you can:
 
-- 📖 閱讀 [工作原理](how-it-works.md) 了解調度器運作機制
-- 🎯 查看 [專案目標](project-goals.md) 了解設計理念
-- 🔧 參考 [API 文檔](api-reference.md) 進行客製化開發
+- 📖 Read How It Works (how-it-works.md) to understand the scheduler’s mechanisms
+- 🎯 See Project Goals (project-goals.md) for design principles
+- 🔧 Refer to the API Reference (api-reference.md) for custom development
 
 ---
 
-!!! success "安裝完成"
-    恭喜！您已成功安裝 Gthulhu 調度器。如果遇到任何問題，請查看 [常見問題](faq.md) 或在 GitHub 提交 Issue。
+!!! success "Installation Complete"
+    Congratulations! You have successfully installed the Gthulhu scheduler. If you encounter any issues, check the FAQ (faq.md) or open an issue on GitHub.

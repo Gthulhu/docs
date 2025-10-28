@@ -1,6 +1,6 @@
 # Gthulhu Documentation
 
-This repository contains the official documentation for Gthulhu and SCX GoLand Core projects, built with MkDocs and Material theme.
+This repository contains the official documentation for Gthulhu and Qumun projects, built with MkDocs and Material theme.
 
 ## 🌐 Live Documentation
 

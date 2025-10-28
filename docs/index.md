@@ -1,8 +1,7 @@
 <a href="https://landscape.cncf.io/?item=provisioning--automation-configuration--gthulhu" target="_blank"><img src="https://img.shields.io/badge/CNCF%20Landscape-5699C6?style=for-the-badge&logo=cncf&label=cncf" alt="cncf landscape" /></a>
 
-<img src="https://raw.githubusercontent.com/Gthulhu/Gthulhu/main/assets/logo.png" width="250" alt="LOGO">
 
-Welcome to the official documentation for **Gthulhu** and **SCX GoLand Core** - advanced Linux schedulers designed to optimize cloud-native workloads using the Linux Scheduler Extension (sched_ext) framework.
+Welcome to the official documentation for **Gthulhu** and **Qumun** - advanced Linux schedulers designed to optimize cloud-native workloads using the Linux Scheduler Extension (sched_ext) framework.
 
 ## 📰 Latest News
 
@@ -59,7 +58,7 @@ graph TB
     C --> D[BPF Scheduler Program]
     D --> E[User Space Scheduler]
     E --> F[Go Scheduling Logic]
-    F --> G[SCX GoLand Core]
+    F --> G[Qumun]
     
     subgraph "Kernel Space"
         B
@@ -82,11 +81,11 @@ graph TB
 - 💬 **Discussions**: [GitHub Discussions](https://github.com/Gthulhu/Gthulhu/discussions)
 - 🐛 **Issues**: [GitHub Issues](https://github.com/Gthulhu/Gthulhu/issues)
 - 📧 **Contact**: [Project Maintainers](mailto:maintainers@gthulhu.dev)
-- 📰 **Media Coverage**: Check out [Media Coverage & Mentions](mentioned.en.md) to see project impact
+- 📰 **Media Coverage**: Check out [Media Coverage & Mentions](mentioned.md) to see project impact
 
 ### Contributing
 
-We welcome contributions! See our [Contributing Guide](contributing.en.md) to get started.
+We welcome contributions! See our [Contributing Guide](contributing.md) to get started.
 
 ### License
 
@@ -95,10 +94,10 @@ This software is distributed under the terms of the GNU General Public License v
 ---
 
 !!! tip "Getting Started"
-    New to Gthulhu? Start with our [Installation Guide](installation.en.md) and learn [How It Works](how-it-works.en.md).
+    New to Gthulhu? Start with our [Installation Guide](installation.md) and learn [How It Works](how-it-works.md).
 
 !!! info "Learn More"
-    Explore the [Development History](development-history.en.md) to understand technical challenges and solutions.
+    Explore the [Development History](development-history.md) to understand technical challenges and solutions.
 
 !!! info "Need Help?"
-    Check our [FAQ](faq.en.md) for common questions or create an issue on GitHub.
+    Check our [FAQ](faq.md) for common questions or create an issue on GitHub.

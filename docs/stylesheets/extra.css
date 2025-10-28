@@ -1,0 +1,131 @@
+/* Google Fonts - 適合 Gthulhu 的現代科技字體 */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* 全站基礎字體設定 */
+body,
+.md-typeset {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-weight: 400 !important;
+  line-height: 1.7 !important;
+}
+
+/* 內文段落 */
+.md-typeset p {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 0.95rem !important;
+  line-height: 1.7 !important;
+}
+
+/* 標題字體 - 使用 Orbitron 保持科技感 */
+.md-typeset h1 {
+  font-family: 'Orbitron', sans-serif !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px !important;
+}
+
+.md-typeset h2 {
+  font-family: 'Orbitron', sans-serif !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.4px !important;
+}
+
+.md-typeset h3,
+.md-typeset h4,
+.md-typeset h5,
+.md-typeset h6 {
+  font-family: 'Orbitron', sans-serif !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.3px !important;
+}
+
+/* 程式碼區塊使用等寬字體 */
+.md-typeset code,
+.md-typeset pre,
+.md-typeset kbd,
+.highlight {
+  font-family: 'JetBrains Mono', 'Consolas', monospace !important;
+}
+
+/* 行內程式碼 */
+.md-typeset code {
+  font-size: 0.85em !important;
+  padding: 0.1em 0.4em !important;
+}
+
+/* 列表文字 */
+.md-typeset ul,
+.md-typeset ol,
+.md-typeset li {
+  font-family: 'Inter', sans-serif !important;
+}
+
+/* 引用區塊 */
+.md-typeset blockquote {
+  font-family: 'Inter', sans-serif !important;
+  font-style: italic !important;
+}
+
+/* 表格 */
+.md-typeset table {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 0.9rem !important;
+}
+
+/* Admonition (提示框) */
+.md-typeset .admonition-title,
+.md-typeset summary {
+  font-family: 'Orbitron', sans-serif !important;
+  font-weight: 600 !important;
+}
+
+.md-typeset .admonition {
+  font-family: 'Inter', sans-serif !important;
+}
+
+/* 調整 logo 大小 */
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg {
+  height: 3rem !important;
+  width: auto !important;
+}
+
+.md-logo img,
+.md-logo svg {
+  height: 3rem !important;
+  width: auto !important;
+}
+
+/* 導航列背景色 */
+.md-header {
+  background-color: #6a887d !important;
+}
+
+.md-tabs {
+  background-color: #6a887d !important;
+}
+
+/* 導航列字體 - 使用 Orbitron 科技感字體 */
+.md-header__title,
+.md-header__topic {
+  font-family: 'Orbitron', 'JetBrains Mono', monospace !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px !important;
+}
+
+.md-tabs__link {
+  font-family: 'Orbitron', 'JetBrains Mono', monospace !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.3px !important;
+}
+
+/* 導航選單項目 */
+.md-nav__link {
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 500 !important;
+}
+
+/* 側邊欄標題 */
+.md-nav__title {
+  font-family: 'Orbitron', sans-serif !important;
+  font-weight: 600 !important;
+}

@@ -1,9 +1,7 @@
 <a href="https://landscape.cncf.io/?item=provisioning--automation-configuration--gthulhu" target="_blank"><img src="https://img.shields.io/badge/CNCF%20Landscape-5699C6?style=for-the-badge&logo=cncf&label=cncf" alt="cncf landscape" /></a>
 
-<img src="https://raw.githubusercontent.com/Gthulhu/Gthulhu/main/assets/logo.png" width="250" alt="LOGO">
 
-
-歡迎來到 Gthulhu 和 SCX GoLand Core 的官方文檔！
+歡迎來到 Gthulhu 和 Qumun 的官方文檔！
 
 ## 📰 Latest News
 
@@ -70,7 +68,7 @@ graph TB
 
 ## 社群與支援
 
-- **GitHub**: [Gthulhu](https://github.com/Gthulhu/Gthulhu) | [SCX GoLand Core](https://github.com/Gthulhu/scx_goland_core)
+- **GitHub**: [Gthulhu](https://github.com/Gthulhu/Gthulhu) | [Qumun](https://github.com/Gthulhu/scx_goland_core)
 - **問題回報**: 請在 GitHub Issues 中回報問題
 - **功能請求**: 歡迎提交 Pull Request 或開啟 Issue 討論
 - **媒體報導**: 查看 [媒體報導與提及](mentioned.md) 了解專案的影響力

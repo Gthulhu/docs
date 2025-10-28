@@ -5,41 +5,23 @@ repo_url: https://github.com/Gthulhu/Gthulhu
 edit_uri: https://github.com/Gthulhu/docs/blob/main/docs/
 
 nav:
-  - Home: 
-    - English: index.md
-    - 中文: index.zh.md
+  - Home: index.md
   - Get Started:
-    - Installation:
-      - English: installation.en.md
-      - 中文: installation.md
-    - k8s deployment:
-      - English: k8s.en.md
-      - 中文: k8s.md
-    - How It Works:
-      - English: how-it-works.en.md
-      - 中文: how-it-works.md
-    - Project Goals:
-      - English: project-goals.en.md
-      - 中文: project-goals.md
-    - Development History:
-      - English: development-history.en.md
-      - 中文: development-history.md
-    - API Reference:
-      - English: api-reference.en.md
-      - 中文: api-reference.md
-    - FAQ:
-      - English: faq.en.md
-      - 中文: faq.md
-    - Mentioned:
-      - English: mentioned.en.md
-      - 中文: mentioned.md
-  - Contributing:
-    - English: contributing.en.md
-    - 中文: contributing.md
+    - Installation: installation.md
+    - K8s Deployment: k8s.md
+    - How It Works: how-it-works.md
+    - Project Goals: project-goals.md
+    - Development History: development-history.md
+    - API Reference: api-reference.md
+    - FAQ: faq.md
+    - Mentioned: mentioned.md
+  - Contributing: contributing.md
 
 theme:
   name: material
   language: en
+  logo: https://raw.githubusercontent.com/Gthulhu/Gthulhu/main/assets/logo.png
+  # favicon: assets/favicon.png
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
@@ -69,6 +51,31 @@ plugins:
       lang: 
         - en
         - zh
+  - i18n:
+      docs_structure: suffix
+      fallback_to_default: true
+      reconfigure_material: true
+      reconfigure_search: true
+      languages:
+        - locale: en
+          default: true
+          name: English
+          build: true
+        - locale: zh
+          name: 中文
+          build: true
+          nav_translations:
+            Home: 首頁
+            Get Started: 開始使用
+            Installation: 安裝
+            K8s Deployment: K8s 部署
+            How It Works: 運作原理
+            Project Goals: 專案目標
+            Development History: 開發歷史
+            API Reference: API 參考
+            FAQ: 常見問題
+            Mentioned: 相關報導
+            Contributing: 貢獻指南
   - mermaid2
 
 markdown_extensions:
@@ -87,6 +94,9 @@ markdown_extensions:
   - pymdownx.details
   - attr_list
   - md_in_html
+
+extra_css:
+  - stylesheets/extra.css
 
 extra:
   analytics:

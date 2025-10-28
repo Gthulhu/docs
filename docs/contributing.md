@@ -1,188 +1,188 @@
-# 貢獻指南
+# Contributing Guide
 
-歡迎您為 Gthulhu 專案做出貢獻！本指南將協助您了解如何參與專案開發。
+Welcome to contribute to the Gthulhu project! This guide will help you understand how to participate in project development.
 
-## 開始之前
+## Before You Begin
 
-### 行為準則
+### Code of Conduct
 
-參與專案請遵守我們的行為準則：
+Please follow our code of conduct when participating in the project:
 
-- 🤝 **尊重他人**：友善對待所有參與者
-- 💬 **建設性溝通**：提供有建設性的意見和建議
-- 🌍 **包容多元**：歡迎不同背景的貢獻者
-- 📚 **樂於學習**：保持開放的學習態度
+- 🤝 **Respect Others**: Treat all participants with kindness
+- 💬 **Constructive Communication**: Provide constructive opinions and suggestions
+- 🌍 **Embrace Diversity**: Welcome contributors from different backgrounds
+- 📚 **Learn Together**: Maintain an open learning attitude
 
-### 貢獻方式
+### Ways to Contribute
 
-在開始貢獻之前，建議先閱讀 [開發歷程](development-history.md) 以了解專案的技術背景和曾經遇到的挑戰。
+Before starting to contribute, we recommend reading the [Development History](development-history.md) to understand the project's technical background and challenges encountered.
 
-您可以通過多種方式為專案做出貢獻：
+You can contribute to the project in various ways:
 
 ```mermaid
 graph LR
-    A[貢獻方式] --> B[程式碼]
-    A --> C[文檔]
-    A --> D[測試]
-    A --> E[問題回報]
-    A --> F[功能建議]
-    A --> G[社群支援]
+    A[Ways to Contribute] --> B[Code]
+    A --> C[Documentation]
+    A --> D[Testing]
+    A --> E[Bug Reports]
+    A --> F[Feature Requests]
+    A --> G[Community Support]
     
-    B --> B1[新功能]
-    B --> B2[錯誤修復]
-    B --> B3[效能最佳化]
+    B --> B1[New Features]
+    B --> B2[Bug Fixes]
+    B --> B3[Performance Optimization]
     
-    C --> C1[API 文檔]
-    C --> C2[使用指南]
-    C --> C3[教學文章]
+    C --> C1[API Documentation]
+    C --> C2[User Guides]
+    C --> C3[Tutorial Articles]
 ```
 
-## 開發環境設定
+## Development Environment Setup
 
-### 必要工具
+### Required Tools
 
-確保您的開發環境具備以下工具：
+Ensure your development environment has the following tools:
 
-| 工具 | 版本需求 | 安裝方式 |
-|------|----------|----------|
-| Go | 1.22+ | [下載安裝](https://golang.org/dl/) |
+| Tool | Version | Installation |
+|------|---------|--------------|
+| Go | 1.22+ | [Download](https://golang.org/dl/) |
 | Clang | 17+ | `apt install clang-17` |
-| Git | 最新 | `apt install git` |
-| Make | 最新 | `apt install make` |
-| Docker | 最新 | [安裝 Docker](https://docs.docker.com/install/) |
+| Git | Latest | `apt install git` |
+| Make | Latest | `apt install make` |
+| Docker | Latest | [Install Docker](https://docs.docker.com/install/) |
 
-### 克隆專案
+### Clone the Project
 
 ```bash
-# 1. Fork 專案 (在 GitHub 上點擊 Fork 按鈕)
-# 2. 克隆您的 fork
-git clone https://github.com/您的用戶名/Gthulhu.git
+# 1. Fork the project (click Fork button on GitHub)
+# 2. Clone your fork
+git clone https://github.com/your-username/Gthulhu.git
 cd Gthulhu
 
-# 3. 新增上游倉庫
+# 3. Add upstream repository
 git remote add upstream https://github.com/Gthulhu/Gthulhu.git
 
-# 4. 驗證 remote 設定
+# 4. Verify remote settings
 git remote -v
 ```
 
-### 建置專案
+### Build the Project
 
 ```bash
-# 安裝相依套件
+# Install dependencies
 make dep
 
-# 初始化 submodules
+# Initialize submodules
 git submodule init
 git submodule sync  
 git submodule update
 
-# 建置專案
+# Build project
 make build
 
-# 執行測試
+# Run tests
 make test
 
-# 程式碼檢查
+# Code linting
 make lint
 ```
 
-## 開發工作流程
+## Development Workflow
 
-### 1. 建立功能分支
+### 1. Create Feature Branch
 
 ```bash
-# 從最新的 main 分支建立新分支
+# Create new branch from latest main
 git checkout main
 git pull upstream main
 git checkout -b feature/your-feature-name
 
-# 或者修復錯誤
+# Or for bug fixes
 git checkout -b fix/issue-number-description
 ```
 
-### 2. 程式碼開發
+### 2. Code Development
 
-#### 程式碼風格
+#### Code Style
 
-- **Go 程式碼**：遵循 `gofmt` 和 `golint` 標準
-- **C 程式碼**：遵循 Linux 核心程式碼風格
-- **提交訊息**：使用語意化提交訊息
+- **Go code**: Follow `gofmt` and `golint` standards
+- **C code**: Follow Linux kernel code style
+- **Commit messages**: Use semantic commit messages
 
 ```bash
-# 格式化 Go 程式碼
+# Format Go code
 gofmt -w .
 
-# 執行 linter
+# Run linter
 make lint
 
-# 執行測試
+# Run tests
 make test
 ```
 
-#### 提交訊息格式
+#### Commit Message Format
 
 ```bash
-# 格式: <類型>(<範圍>): <描述>
+# Format: <type>(<scope>): <description>
 #
-# 類型:
-# - feat: 新功能
-# - fix: 錯誤修復
-# - docs: 文檔更新
-# - style: 程式碼格式化
-# - refactor: 程式碼重構
-# - test: 測試相關
-# - chore: 建置或輔助工具
+# Types:
+# - feat: new feature
+# - fix: bug fix
+# - docs: documentation update
+# - style: code formatting
+# - refactor: code refactoring
+# - test: test related
+# - chore: build or auxiliary tools
 
-# 範例:
+# Examples:
 feat(scheduler): add CPU topology aware scheduling
 fix(bpf): resolve memory leak in task cleanup
 docs(api): update API reference documentation
 ```
 
-### 3. 測試
+### 3. Testing
 
-#### 執行測試套件
+#### Run Test Suite
 
 ```bash
-# 執行所有測試
+# Run all tests
 make test
 
-# 執行特定測試
+# Run specific tests
 go test ./internal/sched/
 
-# 執行基準測試
+# Run benchmark tests
 go test -bench=. ./...
 
-# 測試覆蓋率
+# Test coverage
 go test -coverprofile=coverage.out ./...
 go tool cover -html=coverage.out
 ```
 
-#### 手動測試
+#### Manual Testing
 
 ```bash
-# 建置並測試
+# Build and test
 make build
 sudo ./main &
 
-# 執行壓力測試
+# Run stress tests
 stress-ng --cpu 4 --timeout 60s
 
-# 檢查效能
+# Check performance
 perf stat -e context-switches,cpu-migrations,page-faults sudo ./main
 
-# 停止測試
+# Stop test
 sudo pkill -f "./main"
 ```
 
-### 4. 提交變更
+### 4. Commit Changes
 
 ```bash
-# 添加變更檔案
+# Add changed files
 git add .
 
-# 提交變更
+# Commit changes
 git commit -m "feat(scheduler): add CPU topology aware scheduling
 
 - Implement cache-aware CPU selection
@@ -191,102 +191,102 @@ git commit -m "feat(scheduler): add CPU topology aware scheduling
 
 Closes #123"
 
-# 推送到您的 fork
+# Push to your fork
 git push origin feature/your-feature-name
 ```
 
-### 5. 建立 Pull Request
+### 5. Create Pull Request
 
-1. **前往 GitHub**：訪問您 fork 的頁面
-2. **建立 PR**：點擊 "New Pull Request"
-3. **填寫模板**：使用提供的 PR 模板
-4. **等待審查**：維護者會審查您的程式碼
+1. **Go to GitHub**: Visit your fork's page
+2. **Create PR**: Click "New Pull Request"
+3. **Fill Template**: Use the provided PR template
+4. **Wait for Review**: Maintainers will review your code
 
-#### PR 模板範例
+#### PR Template Example
 
 ```markdown
-## 變更說明
-簡要描述這個 PR 的變更內容。
+## Description
+Brief description of changes in this PR.
 
-## 變更類型
-- [ ] 錯誤修復
-- [ ] 新功能
-- [ ] 效能改進
-- [ ] 文檔更新
-- [ ] 程式碼重構
+## Type of Change
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Performance improvement
+- [ ] Documentation update
+- [ ] Code refactoring
 
-## 測試
-- [ ] 已執行現有測試套件
-- [ ] 已新增新的測試案例
-- [ ] 已手動測試功能
+## Testing
+- [ ] Ran existing test suite
+- [ ] Added new test cases
+- [ ] Manually tested functionality
 
-## 檢查清單
-- [ ] 程式碼符合風格指南
-- [ ] 提交訊息清晰明確 
-- [ ] 已更新相關文檔
-- [ ] 變更向後兼容
+## Checklist
+- [ ] Code follows style guidelines
+- [ ] Commit messages are clear
+- [ ] Updated relevant documentation
+- [ ] Changes are backward compatible
 
-## 相關 Issue
+## Related Issues
 Fixes #123
 ```
 
-## 程式碼審查
+## Code Review
 
-### 審查標準
+### Review Standards
 
-程式碼審查將檢查以下方面：
+Code reviews will check the following aspects:
 
-1. **正確性**：程式碼邏輯是否正確
-2. **效能**：是否有效能問題
-3. **安全性**：是否存在安全風險
-4. **可讀性**：程式碼是否易於理解
-5. **可維護性**：程式碼結構是否合理
+1. **Correctness**: Is the code logic correct
+2. **Performance**: Are there performance issues
+3. **Security**: Are there security risks
+4. **Readability**: Is the code easy to understand
+5. **Maintainability**: Is the code structure reasonable
 
-### 回應審查意見
+### Responding to Review Comments
 
 ```bash
-# 根據審查意見修改程式碼
+# Modify code based on review comments
 git add .
 git commit -m "address review comments: improve error handling"
 git push origin feature/your-feature-name
 ```
 
-### 常見審查意見
+### Common Review Comments
 
-1. **錯誤處理**：
+1. **Error Handling**:
 ```go
-// ❌ 不好的錯誤處理
+// ❌ Poor error handling
 result, _ := someFunction()
 
-// ✅ 正確的錯誤處理
+// ✅ Proper error handling
 result, err := someFunction()
 if err != nil {
     return fmt.Errorf("failed to do something: %w", err)
 }
 ```
 
-2. **記憶體管理**：
+2. **Memory Management**:
 ```c
-// ❌ 記憶體洩漏
+// ❌ Memory leak
 char *buffer = malloc(size);
-// ... 使用 buffer
-// 忘記釋放記憶體
+// ... use buffer
+// forgot to free memory
 
-// ✅ 正確的記憶體管理
+// ✅ Proper memory management
 char *buffer = malloc(size);
 if (!buffer) return -ENOMEM;
-// ... 使用 buffer
+// ... use buffer
 free(buffer);
 ```
 
-3. **並發安全**：
+3. **Concurrency Safety**:
 ```go
-// ❌ 競態條件
+// ❌ Race condition
 var counter int
 go func() { counter++ }()
 go func() { counter++ }()
 
-// ✅ 使用互斥鎖
+// ✅ Use mutex
 var mu sync.Mutex
 var counter int
 go func() {
@@ -296,33 +296,33 @@ go func() {
 }()
 ```
 
-## 特殊貢獻類型
+## Special Contribution Types
 
-### 文檔貢獻
+### Documentation Contributions
 
-文檔改進同樣重要：
+Documentation improvements are equally important:
 
 ```bash
-# 克隆文檔專案
+# Clone documentation project
 git clone https://github.com/Gthulhu/docs.git
 cd docs
 
-# 安裝 MkDocs
+# Install MkDocs
 pip install mkdocs mkdocs-material
 
-# 本地預覽
+# Local preview
 mkdocs serve
 
-# 編輯文檔檔案
+# Edit documentation files
 # docs/your-page.md
 ```
 
-### 測試貢獻
+### Testing Contributions
 
-新增測試用例：
+Add test cases:
 
 ```go
-// 範例：新增基準測試
+// Example: Add benchmark test
 func BenchmarkScheduleTask(b *testing.B) {
     scheduler := NewScheduler()
     task := &Task{PID: 123, Weight: 1024}
@@ -333,119 +333,119 @@ func BenchmarkScheduleTask(b *testing.B) {
     }
 }
 
-// 範例：新增整合測試
+// Example: Add integration test
 func TestSchedulerIntegration(t *testing.T) {
-    // 設定測試環境
+    // Set up test environment
     scheduler := NewScheduler()
     
-    // 測試案例
+    // Test cases
     testCases := []struct{
         name     string
         tasks    []*Task
         expected int
     }{
-        // 測試案例...
+        // Test cases...
     }
     
     for _, tc := range testCases {
         t.Run(tc.name, func(t *testing.T) {
-            // 執行測試...
+            // Execute test...
         })
     }
 }
 ```
 
-### BPF 程式貢獻
+### BPF Program Contributions
 
-修改 BPF 程式需要特別注意：
+Modifying BPF programs requires special attention:
 
 ```c
-// 1. 確保 BPF 驗證器通過
+// 1. Ensure BPF verifier passes
 static __always_inline int validate_task(struct task_struct *p) {
     if (!p) return -EINVAL;
-    // 其他驗證...
+    // Other validations...
     return 0;
 }
 
-// 2. 使用 BPF helper 函數
+// 2. Use BPF helper functions
 SEC("struct_ops/select_cpu")
 s32 BPF_STRUCT_OPS(gthulhu_select_cpu, struct task_struct *p, s32 prev_cpu, u64 wake_flags) {
-    // 使用 BPF helper
+    // Use BPF helper
     u32 cpu = bpf_get_smp_processor_id();
     
-    // 邊界檢查
+    // Boundary check
     if (cpu >= MAX_CPUS) return prev_cpu;
     
     return select_best_cpu(p, prev_cpu);
 }
 
-// 3. 添加追蹤點
+// 3. Add trace points
 bpf_trace_printk("Task %d scheduled on CPU %d\n", p->pid, cpu);
 ```
 
-## 發布流程
+## Release Process
 
-### 版本號規則
+### Version Numbering Rules
 
-遵循 [語意化版本](https://semver.org/)：
+Follow [Semantic Versioning](https://semver.org/):
 
 ```
 MAJOR.MINOR.PATCH
 
-例如: 1.0.0, 1.1.0, 1.1.1
+Example: 1.0.0, 1.1.0, 1.1.1
 ```
 
-- **MAJOR**：不相容的 API 變更
-- **MINOR**：向後相容的功能新增
-- **PATCH**：向後相容的錯誤修復
+- **MAJOR**: Incompatible API changes
+- **MINOR**: Backward-compatible feature additions
+- **PATCH**: Backward-compatible bug fixes
 
-### 發布檢查清單
+### Release Checklist
 
-發布前確認：
+Before release, confirm:
 
-- [ ] 所有測試通過
-- [ ] 文檔已更新
-- [ ] CHANGELOG 已更新
-- [ ] 版本號已更新
-- [ ] 建立 GitHub Release
-- [ ] 更新 Docker 映像檔
+- [ ] All tests pass
+- [ ] Documentation updated
+- [ ] CHANGELOG updated
+- [ ] Version number updated
+- [ ] GitHub Release created
+- [ ] Docker image updated
 
-## 社群參與
+## Community Participation
 
-### 聯繫方式
+### Contact Methods
 
-- **GitHub Issues**：問題回報和功能請求
-- **GitHub Discussions**：技術討論和問答
-- **Email**：重要事項聯絡
+- **GitHub Issues**: Bug reports and feature requests
+- **GitHub Discussions**: Technical discussions and Q&A
+- **Email**: Important matters contact
 
-### 社群活動
+### Community Activities
 
-- **每月會議**：線上技術討論會議
-- **程式碼審查**：互相審查和學習
-- **技術分享**：分享使用經驗和最佳實踐
+- **Monthly Meetings**: Online technical discussion meetings
+- **Code Reviews**: Mutual review and learning
+- **Tech Sharing**: Share usage experiences and best practices
 
-## 認可與感謝
+## Recognition and Thanks
 
-### 貢獻者列表
+### Contributors List
 
-所有貢獻者都會在以下地方被認可：
+All contributors will be recognized in the following places:
 
-- README.md 的貢獻者章節
-- GitHub Contributors 頁面
-- 發布說明中的感謝名單
+- Contributors section in README.md
+- GitHub Contributors page
+- Thanks list in release notes
 
-### 特殊貢獻
+### Special Contributions
 
-對於重大貢獻，我們會提供：
+For major contributions, we will provide:
 
-- 專案 Committer 權限
-- 技術部落格署名機會
-- 會議演講邀請
+- Project Committer privileges
+- Technical blog byline opportunities
+- Conference speaking invitations
 
 ---
 
-!!! success "歡迎貢獻"
-    感謝您考慮為 Gthulhu 專案做出貢獻！每一個貢獻，無論大小，都對專案的發展非常重要。
+!!! success "Welcome to Contribute"
+    Thank you for considering contributing to the Gthulhu project! Every contribution, no matter how big or small, is very important to the project's development.
 
-!!! tip "需要幫助？"
-    如果您在貢獻過程中遇到任何問題，請隨時在 GitHub Issues 中尋求幫助，或聯繫專案維護者。我們很樂意協助您！
+!!! tip "Need Help?"
+    If you encounter any problems during the contribution process, please feel free to seek help in GitHub Issues or contact project maintainers. We're happy to assist you!

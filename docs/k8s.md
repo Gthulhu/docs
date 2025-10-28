@@ -1,22 +1,22 @@
-# 使用 Kubernetes 部署 Gthulhu
+# Deploying Gthulhu with Kubernetes
 
-本篇文件介紹如何在 Kubernetes 環境中部署 Gthulhu 排程器以及 API server。
+This document explains how to deploy the Gthulhu scheduler and API server in a Kubernetes environment.
 
-## 前提條件
+## Prerequisites
 
-- 完成 Microk8s 的安裝與設定，並確保 `kubectl` 可正常使用。
-- 啟用 Microk8s 內建的 container registry，詳情請參考：[How to use the built-in registry](https://microk8s.io/docs/registry-built-in)。
-- 使用 `microk8s enable rbac` 啟用 Microk8s 的 RBAC 功能
+- Complete the installation and setup of Microk8s, and ensure `kubectl` works properly.
+- Enable Microk8s' built-in container registry. For details, see: [How to use the built-in registry](https://microk8s.io/docs/registry-built-in).
+- Enable Microk8s RBAC functionality using `microk8s enable rbac`
 
-## 建立 Gthulhu Docker 映像檔
+## Building Gthulhu Docker Images
 
-首先，取得 Gthluhu 專案的原始程式碼：
+First, obtain the Gthulhu project source code:
 ```sh
 $ git clone --recursive https://github.com/Gthulhu/Gthulhu.git
 ```
 
-接著，參考 [Gthulhu 安裝文件](https://gthulhu.github.io/docs/installation.en/) 完成 Gthulhu 的編譯。
-完成後，使用以下命令編譯並推送 Docker 映像檔到本地的 Microk8s registry：
+Next, refer to the [Gthulhu Installation Guide](https://gthulhu.github.io/docs/installation.en/) to complete the Gthulhu compilation.
+After completion, use the following commands to build and push Docker images to the local Microk8s registry:
 
 ```sh
 $ make image
@@ -27,16 +27,16 @@ $ docker push 127.0.0.1:32000/gthulhu-api:latest
 $ docker push 127.0.0.1:32000/gthulhu:latest
 ```
 
-## 部署 Gthulhu 到 Kubernetes
+## Deploying Gthulhu to Kubernetes
 
-接下來，使用以下命令將 Gthulhu 部署到 Kubernetes 叢集：
+Next, use the following commands to deploy Gthulhu to the Kubernetes cluster:
 
 ```sh
 $ cd chart
 $ helm install gthulhu gthulhu
 ```
 
-若沒有出現任何錯誤，使用以下命令理應可以看到 Gthulhu 的 Pod 已成功啟動：
+If no errors occur, you should be able to see that the Gthulhu pods have started successfully:
 
 ```sh
 $ kubectl get po | grep gthulhu
@@ -44,7 +44,7 @@ gthulhu-api-72ts9                              1/1     Running   0              
 gthulhu-scheduler-lph8h                        1/1     Running   0              9s
 ```
 
-查看 scheduler 的日誌，確認其運作正常：
+Check the scheduler logs to confirm it's working properly:
 
 ```sh
 $ kubectl logs gthulhu-scheduler-lph8h
@@ -90,7 +90,7 @@ map: goland, type: BPF_MAP_TYPE_STRUCT_OPS, fd: 17
 2025/09/22 13:15:49 Scheduling strategies updated: 4 strategies
 ```
 
-若能夠看到類似上述的日誌，表示 Gthulhu 已成功運行於 Kubernetes 叢集之中。
+If you can see logs similar to the above, it means Gthulhu is successfully running in the Kubernetes cluster.
 
-!!! info "深入了解"
-    Gthulhu 提供的 helm chart 皆使用 DaemonSet 作為 pod generator，以此確保每個節點皆會運行一個 Gthulhu 排程器服務。
+!!! info "Learn More"
+    The Helm chart provided by Gthulhu uses DaemonSet as the pod generator to ensure that each node runs a Gthulhu scheduler service.

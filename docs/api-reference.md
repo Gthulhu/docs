@@ -1,26 +1,26 @@
-# API 參考
+# API Reference
 
-本頁面提供 Gthulhu 和 SCX GoLand Core 的完整 API 參考文檔。
+This page provides complete API reference documentation for Gthulhu and Qumun.
 
-## SCX GoLand Core API
+## Qumun API
 
-### 核心模組
+### Core Module
 
 #### `core.LoadSched()`
 
-載入 BPF 調度器程式。
+Load BPF scheduler program.
 
 ```go
 func LoadSched(bpfObjectFile string) *BPFModule
 ```
 
-**參數**:
-- `bpfObjectFile`: BPF 物件檔案路徑 (如: `main.bpf.o`)
+**Parameters**:
+- `bpfObjectFile`: Path to BPF object file (e.g., `main.bpf.o`)
 
-**回傳值**:
-- `*BPFModule`: BPF 模組實例
+**Returns**:
+- `*BPFModule`: BPF module instance
 
-**範例**:
+**Example**:
 ```go
 bpfModule := core.LoadSched("main.bpf.o")
 defer bpfModule.Close()
@@ -28,16 +28,16 @@ defer bpfModule.Close()
 
 #### `BPFModule.AssignUserSchedPid()`
 
-設定使用者空間調度器的 PID。
+Set the PID of the user-space scheduler.
 
 ```go
 func (bm *BPFModule) AssignUserSchedPid(pid int) error
 ```
 
-**參數**:
-- `pid`: 使用者空間調度器的程序 ID
+**Parameters**:
+- `pid`: Process ID of the user-space scheduler
 
-**範例**:
+**Example**:
 ```go
 pid := os.Getpid()
 err := bpfModule.AssignUserSchedPid(pid)
@@ -48,13 +48,13 @@ if err != nil {
 
 #### `BPFModule.Attach()`
 
-附加 BPF 程式到核心。
+Attach BPF program to kernel.
 
 ```go
 func (bm *BPFModule) Attach() error
 ```
 
-**範例**:
+**Example**:
 ```go
 if err := bpfModule.Attach(); err != nil {
     log.Panicf("bpfModule attach failed: %v", err)
@@ -63,16 +63,16 @@ if err := bpfModule.Attach(); err != nil {
 
 #### `BPFModule.ReceiveProcExitEvt()`
 
-接收程序退出事件。
+Receive process exit events.
 
 ```go
 func (bm *BPFModule) ReceiveProcExitEvt() int
 ```
 
-**回傳值**:
-- `int`: 退出程序的 PID，如果沒有事件則回傳 -1
+**Returns**:
+- `int`: PID of exited process, or -1 if no events
 
-**範例**:
+**Example**:
 ```go
 go func() {
     for {
@@ -85,20 +85,20 @@ go func() {
 }()
 ```
 
-### 快取模組 (`util` 套件)
+### Cache Module (`util` package)
 
 #### `cache.InitCacheDomains()`
 
-初始化 CPU 快取域。
+Initialize CPU cache domains.
 
 ```go
 func InitCacheDomains(bpfModule *core.BPFModule) error
 ```
 
-**參數**:
-- `bpfModule`: BPF 模組實例
+**Parameters**:
+- `bpfModule`: BPF module instance
 
-**範例**:
+**Example**:
 ```go
 err := cache.InitCacheDomains(bpfModule)
 if err != nil {
@@ -106,26 +106,26 @@ if err != nil {
 }
 ```
 
-### 調度模組 (`sched` 套件)
+### Scheduler Module (`sched` package)
 
 #### `sched.DeletePidFromTaskInfo()`
 
-從任務資訊中刪除指定 PID。
+Delete specified PID from task information.
 
 ```go
 func DeletePidFromTaskInfo(pid int)
 ```
 
-**參數**:
-- `pid`: 要刪除的程序 ID
+**Parameters**:
+- `pid`: Process ID to delete
 
-## BPF 程式 API
+## BPF Program API
 
-### Map 結構
+### Map Structures
 
 #### `task_info_map`
 
-儲存任務資訊的 Hash Map。
+Hash map storing task information.
 
 ```c
 struct {
@@ -138,25 +138,25 @@ struct {
 
 #### `struct task_info`
 
-任務資訊結構體。
+Task information structure.
 
 ```c
 struct task_info {
-    __u64 vruntime;                    // 虛擬執行時間
-    __u32 weight;                      // 任務權重
-    __u32 slice_ns;                    // 時間片 (奈秒)
-    __u64 exec_start;                  // 執行開始時間
-    __u64 sum_exec_runtime;            // 累計執行時間
-    __u32 voluntary_ctxt_switches;     // 自願上下文切換次數
-    __u32 nonvoluntary_ctxt_switches;  // 非自願上下文切換次數
+    __u64 vruntime;                    // Virtual runtime
+    __u32 weight;                      // Task weight
+    __u32 slice_ns;                    // Time slice (nanoseconds)
+    __u64 exec_start;                  // Execution start time
+    __u64 sum_exec_runtime;            // Cumulative execution time
+    __u32 voluntary_ctxt_switches;     // Voluntary context switches
+    __u32 nonvoluntary_ctxt_switches;  // Non-voluntary context switches
 };
 ```
 
-### BPF 程式進入點
+### BPF Program Entry Points
 
 #### `sched_ext_ops`
 
-調度器操作結構體。
+Scheduler operations structure.
 
 ```c
 SEC(".struct_ops.link")
@@ -173,28 +173,28 @@ struct sched_ext_ops gthulhu_ops = {
 };
 ```
 
-### 核心函數
+### Core Functions
 
 #### `gthulhu_select_cpu()`
 
-選擇適合的 CPU 核心。
+Select appropriate CPU core.
 
 ```c
 s32 BPF_STRUCT_OPS(gthulhu_select_cpu, struct task_struct *p, 
                    s32 prev_cpu, u64 wake_flags)
 ```
 
-**參數**:
-- `p`: 任務結構體指標
-- `prev_cpu`: 前一個 CPU 編號
-- `wake_flags`: 喚醒標誌
+**Parameters**:
+- `p`: Task structure pointer
+- `prev_cpu`: Previous CPU number
+- `wake_flags`: Wake-up flags
 
-**回傳值**:
-- `s32`: 選中的 CPU 編號
+**Returns**:
+- `s32`: Selected CPU number
 
 #### `gthulhu_enqueue()`
 
-將任務加入佇列。
+Enqueue task.
 
 ```c
 void BPF_STRUCT_OPS(gthulhu_enqueue, struct task_struct *p, u64 enq_flags)
@@ -202,41 +202,41 @@ void BPF_STRUCT_OPS(gthulhu_enqueue, struct task_struct *p, u64 enq_flags)
 
 #### `gthulhu_dispatch()`
 
-調度任務執行。
+Dispatch task for execution.
 
 ```c
 void BPF_STRUCT_OPS(gthulhu_dispatch, s32 cpu, struct task_struct *prev)
 ```
 
-## 配置選項
+## Configuration Options
 
-### 環境變數
+### Environment Variables
 
-| 變數名 | 說明 | 預設值 | 類型 |
-|--------|------|--------|------|
-| `GTHULHU_DEBUG` | 啟用調試模式 | `false` | bool |
-| `GTHULHU_LOG_LEVEL` | 日誌等級 | `INFO` | string |
-| `GTHULHU_MAX_TASKS` | 最大任務數 | `4096` | int |
+| Variable | Description | Default | Type |
+|----------|-------------|---------|------|
+| `GTHULHU_DEBUG` | Enable debug mode | `false` | bool |
+| `GTHULHU_LOG_LEVEL` | Log level | `INFO` | string |
+| `GTHULHU_MAX_TASKS` | Maximum number of tasks | `4096` | int |
 
-### 執行時參數
+### Runtime Parameters
 
-#### 時間片設定
+#### Time Slice Configuration
 
 ```c
-// 基礎時間片 (奈秒)
+// Base time slice (nanoseconds)
 #define BASE_SLICE_NS    5000000ULL  // 5ms
 
-// 最小時間片
+// Minimum time slice
 #define MIN_SLICE_NS     1000000ULL  // 1ms
 
-// 最大時間片
+// Maximum time slice
 #define MAX_SLICE_NS    20000000ULL  // 20ms
 ```
 
-#### 權重設定
+#### Weight Configuration
 
 ```c
-// Nice 值對應的權重表
+// Weight table corresponding to nice values
 static const int prio_to_weight[40] = {
  /* -20 */     88761,     71755,     56483,     46273,     36291,
  /* -15 */     29154,     23254,     18705,     14949,     11916,
@@ -249,39 +249,39 @@ static const int prio_to_weight[40] = {
 };
 ```
 
-## 錯誤處理
+## Error Handling
 
-### 常見錯誤碼
+### Common Error Codes
 
-| 錯誤碼 | 說明 | 解決方案 |
-|--------|------|----------|
-| `-EPERM` | 權限不足 | 使用 root 權限執行 |
-| `-ENOENT` | BPF 檔案不存在 | 確認 BPF 物件檔案路徑 |
-| `-EINVAL` | 無效參數 | 檢查函數參數 |
-| `-ENOMEM` | 記憶體不足 | 增加系統記憶體 |
+| Error Code | Description | Solution |
+|------------|-------------|----------|
+| `-EPERM` | Permission denied | Run with root privileges |
+| `-ENOENT` | BPF file not found | Verify BPF object file path |
+| `-EINVAL` | Invalid parameters | Check function parameters |
+| `-ENOMEM` | Out of memory | Increase system memory |
 
-### 錯誤處理範例
+### Error Handling Example
 
 ```go
-// 錯誤處理模式
+// Error handling pattern
 if err := bpfModule.Attach(); err != nil {
     switch {
     case strings.Contains(err.Error(), "permission denied"):
-        log.Fatal("需要 root 權限")
+        log.Fatal("Root privileges required")
     case strings.Contains(err.Error(), "no such file"):
-        log.Fatal("BPF 檔案不存在")
+        log.Fatal("BPF file does not exist")
     default:
-        log.Fatalf("未知錯誤: %v", err)
+        log.Fatalf("Unknown error: %v", err)
     }
 }
 ```
 
-## 調試 API
+## Debugging API
 
-### 統計資訊
+### Statistics Information
 
 ```go
-// 獲取調度器統計資訊
+// Get scheduler statistics
 type SchedulerStats struct {
     TotalTasks          uint64
     ActiveTasks         uint64
@@ -291,30 +291,30 @@ type SchedulerStats struct {
 }
 
 func GetSchedulerStats() *SchedulerStats {
-    // 實作細節...
+    // Implementation details...
 }
 ```
 
-### 調試工具函數
+### Debug Tool Functions
 
 ```c
-// BPF 調試巨集
+// BPF debug macros
 #define bpf_debug(fmt, args...) \
     bpf_trace_printk(fmt, sizeof(fmt), ##args)
 
-// 追蹤任務狀態變化
+// Trace task state changes
 static void trace_task_state(struct task_struct *p, const char *event) {
     bpf_debug("Task %d: %s (vruntime=%llu)\n", 
               p->pid, event, get_task_vruntime(p));
 }
 ```
 
-## 效能調優 API
+## Performance Tuning API
 
-### 動態參數調整
+### Dynamic Parameter Adjustment
 
 ```go
-// 調整調度參數
+// Adjust scheduling parameters
 type SchedulingParams struct {
     BaseSliceNs      uint64
     MinSliceNs       uint64  
@@ -324,14 +324,14 @@ type SchedulingParams struct {
 }
 
 func UpdateSchedulingParams(params *SchedulingParams) error {
-    // 實作細節...
+    // Implementation details...
 }
 ```
 
-### 效能監控
+### Performance Monitoring
 
 ```c
-// 效能計數器
+// Performance counters
 struct perf_counters {
     __u64 dispatch_count;
     __u64 enqueue_count;
@@ -343,9 +343,9 @@ struct perf_counters {
 
 ---
 
-!!! note "API 版本"
-    當前 API 版本: v0.1.x  
-    API 穩定性: Alpha (可能會有破壞性變更)
+!!! note "API Version"
+    Current API Version: v0.1.x  
+    API Stability: Alpha (may have breaking changes)
 
-!!! tip "更多範例"
-    更多使用範例請參考專案原始碼中的 `examples/` 目錄。
+!!! tip "More Examples"
+    For more usage examples, please refer to the `examples/` directory in the project source code.
