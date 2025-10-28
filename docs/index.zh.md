@@ -32,7 +32,7 @@ Gthulhu 簡化了從使用者意圖到調度策略的轉換。使用者可以使
 
 點擊下方連結觀看我們在 YouTube 上的 DEMO！
 
-[![IMAGE ALT TEXT HERE](https://github.com/Gthulhu/Gthulhu/raw/main/assets/preview.png){ width="200" }](https://www.youtube.com/watch?v=MfU64idQcHg)
+<iframe width="560" height="315" src="https://www.youtube.com/embed/p7cPlWHQrDY?si=WmI7TXsxTixD3E2C" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 ## Product Roadmap
 
@@ -63,41 +63,6 @@ graph TB
     C --> D[Linux 核心 sched_ext]
     D --> E[CPU 核心]
 ```
-
-## 開始使用
-
-!!! tip "快速開始"
-    如果您是第一次使用，建議先查看 [安裝指南](installation.md) 來設定您的環境。
-
-### 系統需求
-
-- **Linux 核心**: 6.12+ (需支援 sched_ext)
-- **Go**: 1.22+
-- **LLVM/Clang**: 17+
-- **libbpf**: 最新版本
-
-### 快速安裝
-
-```bash
-# 克隆專案
-git clone https://github.com/Gthulhu/Gthulhu.git
-cd Gthulhu
-
-# 設定相依套件
-make dep
-git submodule init && git submodule sync && git submodule update
-
-# 建置專案
-make build
-
-# 執行調度器
-sudo ./main
-```
-
-## 專案狀態
-
-!!! warning "開發中"
-    目前專案仍在積極開發中，**不建議在生產環境中使用**。
 
 ## 開源授權
 

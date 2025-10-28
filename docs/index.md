@@ -33,7 +33,7 @@ Gthulhu simplfies the transformation from user's intents to scheduling policies.
 
 Click the image below to see our DEMO on YouTube!
 
-[![IMAGE ALT TEXT HERE](https://github.com/Gthulhu/Gthulhu/raw/main/assets/preview.png){ width="200" }](https://www.youtube.com/watch?v=MfU64idQcHg)
+<iframe width="560" height="315" src="https://www.youtube.com/embed/p7cPlWHQrDY?si=WmI7TXsxTixD3E2C" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 ## Product Roadmap
 
@@ -74,105 +74,6 @@ graph TB
     end
 ```
 
-## Key Features
-
-### 🚀 Performance Optimizations
-
-- **Virtual Runtime (vruntime) Based Scheduling**: Fair scheduling with low latency
-- **Latency-Sensitive Task Prioritization**: Automatic detection and prioritization of interactive workloads
-- **Dynamic Time Slice Adjustment**: Adaptive time slice allocation based on workload characteristics
-- **CPU Topology Aware Task Placement**: Cache-aware task assignment for optimal performance
-- **Automatic Idle CPU Selection**: Intelligent CPU selection algorithms
-
-### ☁️ Cloud-Native Features
-
-- **Container Awareness**: Understanding of container boundaries and resource limits
-- **Microservice Optimization**: Reduced inter-service communication latency
-- **Elastic Scaling Support**: Dynamic resource allocation capabilities
-- **Multi-Tenant Isolation**: Fair resource sharing between different tenants
-
-### 🔧 Developer-Friendly
-
-- **User-Space Extensibility**: Custom scheduling policies without kernel modifications
-- **Rich Debugging Tools**: Comprehensive monitoring and debugging capabilities
-- **Complete Documentation**: From beginner to advanced developer guides
-- **Active Community**: Open and welcoming developer community
-
-## Quick Start
-
-### Prerequisites
-
-- Linux kernel 6.12+ with sched_ext support
-- Go 1.22+
-- LLVM/Clang 17+
-- libbpf
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/Gthulhu/Gthulhu.git
-cd Gthulhu
-
-# Set up dependencies
-make dep
-git submodule init && git submodule update
-
-# Build the scheduler
-make build
-
-# Run the scheduler (requires root)
-sudo ./main
-```
-
-### Docker Quick Start
-
-```bash
-# Build Docker image
-make image
-
-# Run in container
-docker run --privileged=true --pid host --rm gthulhu:latest /gthulhu/main
-```
-
-## Use Cases
-
-### 🎮 Interactive Applications
-
-Perfect for applications requiring low latency and smooth user experience:
-
-- Desktop environments
-- Gaming applications  
-- Real-time multimedia
-- Video conferencing
-
-### 🏢 Enterprise Workloads
-
-Optimized for business-critical applications:
-
-- Web servers and APIs
-- Database systems
-- Application servers
-- Batch processing
-
-### 🔬 High-Performance Computing
-
-Designed for compute-intensive workloads:
-
-- Scientific computing
-- Data analytics
-- Machine learning training
-- Simulation workloads
-
-
-## System Requirements
-
-### Minimum Requirements
-
-- **OS**: Linux with kernel 6.12+
-- **Architecture**: x86_64
-- **Memory**: 2GB RAM
-- **Storage**: 1GB available space
 
 ## Community
 
