@@ -8,96 +8,25 @@ This page provides detailed information about the core working principles and te
 
 Gthulhu scheduler adopts a modern dual-component architecture:
 
-```mermaid
-graph TB
-    A[User Applications] --> B[Linux Kernel]
-    B --> C[sched_ext Framework]
-    C --> D[BPF Scheduler Program]
-    D --> E[User Space Scheduler]
-    E --> F[Go Scheduling Logic]
-    F --> G[Qumun]
-    
-    subgraph "Kernel Space"
-        B
-        C
-        D
-    end
-    
-    subgraph "User Space"
-        E
-        F
-        G
-    end
-```
+![](./assets/qumun.png)
 
-#### 1. BPF Component (Kernel Space)
+#### 1. BPF Scheduler
 
-- **File**: `main.bpf.c`
-- **Function**: Implements low-level sched_ext framework interfaces
-- **Responsibilities**:
-  - Task queue management
-  - CPU selection logic
-  - Basic scheduling decisions
-  - Communication with user space
+A BPF scheduler implemented based on the Linux kernel's sched_ext framework, responsible for low-level scheduling functions such as task queue management, CPU selection logic, and scheduling execution.
+The BPF scheduler communicates with the user-space Gthulhu scheduler through two types of eBPF Maps: ring buffer and user ring buffer.
 
-#### 2. Go Component (User Space)
+#### 2. Gthulhu (User Space Scheduler)
 
-- **File**: `main.go` + Qumun
-- **Function**: Implements high-level scheduling policies
-- **Responsibilities**:
-  - Complex scheduling algorithms
-  - Task priority calculation
-  - System monitoring and statistics
-  - Dynamic parameter adjustment
+The Gthulhu scheduler, developed using the qumun framework, receives information about tasks to be scheduled from the ring buffer eBPF Map and makes decisions based on scheduling policies.
+Finally, the scheduling results are sent back to the BPF Scheduler through the user ring buffer eBPF Map.
 
-## Core Scheduling Algorithm
+![](./assets/plugin.png)
 
-### Virtual Runtime (vruntime)
+The Gthulhu scheduler supports a plugin-based design, allowing developers to extend and customize scheduling policies according to their needs.
+[Gthulhu/plugin](https://github.com/Gthulhu/plugin/tree/main/plugin) currently implements two schedulers:
 
-Gthulhu uses a virtual runtime-based fair scheduling algorithm:
-
-```go
-// Virtual runtime calculation
-vruntime = actual_runtime * NICE_0_WEIGHT / task_weight
-```
-
-#### Key Concepts
-
-1. **Time Slice**
-   ```c
-   // Basic time slice calculation
-   slice_ns = base_slice_ns * (task_weight / NICE_0_WEIGHT)
-   ```
-
-2. **Task Weight**
-   ```c
-   // Weight calculation based on nice value
-   weight = prio_to_weight[task->static_prio - MAX_RT_PRIO]
-   ```
-
-3. **Scheduling Decision**
-   ```c
-   // Select task with minimum vruntime
-   next_task = min_vruntime_task(runqueue)
-   ```
-
-### Latency-Sensitive Optimization
-
-#### Task Classification
-
-The system automatically identifies and classifies different types of tasks:
-
-```mermaid
-graph LR
-    A[New Task] --> B{Analyze Task Characteristics}
-    B -->|Frequent I/O| C[Interactive Task]
-    B -->|CPU Intensive| D[Batch Task]
-    B -->|Mixed Mode| E[General Task]
-    
-    C --> F[Low Latency Priority]
-    D --> G[High Throughput Priority]
-    E --> H[Balanced Mode]
-```
+- Simple Scheduler: A simple scheduler implemented with reference to scx_simple, with core logic of approximately 200 lines.
+- Gthulhu Scheduler: A virtual runtime-based scheduler with latency-sensitive optimization and CPU topology-aware features.
 
 ## CPU Topology-Aware Scheduling
 

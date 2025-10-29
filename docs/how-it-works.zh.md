@@ -8,96 +8,25 @@
 
 Gthulhu 排程器採用現代雙元件架構：
 
-```mermaid
-graph TB
-    A[用戶應用程式] --> B[Linux 核心]
-    B --> C[sched_ext 框架]
-    C --> D[BPF 排程器程式]
-    D --> E[用戶空間排程器]
-    E --> F[Go 排程邏輯]
-    F --> G[Qumun]
-    
-    subgraph "核心空間"
-        B
-        C
-        D
-    end
-    
-    subgraph "用戶空間"
-        E
-        F
-        G
-    end
-```
+![](./assets/qumun.png)
 
-#### 1. BPF 元件 (核心空間)
+#### 1. BPF Scheduler
 
-- **檔案**: `main.bpf.c`
-- **功能**: 實現低層級 sched_ext 框架介面
-- **職責**:
-  - 任務佇列管理
-  - CPU 選擇邏輯
-  - 基本排程決策
-  - 與用戶空間通訊
+基於 Linux 核心的 sched_ext 框架實作的 BPF 排程器，負責低階排程功能，如任務佇列管理、CPU 選擇邏輯和執行排程。
+BPF 排程器通過 ring buffer 與 user ring buffer 兩種 eBPF Map 與使用者空間的 Gthulhu 排程器溝通。
 
-#### 2. Go 元件 (用戶空間)
+#### 2. Gthulhu (User Space Scheduler)
 
-- **檔案**: `main.go` + Qumun
-- **功能**: 實現高層級排程政策
-- **職責**:
-  - 複雜排程演算法
-  - 任務優先級計算
-  - 系統監控和統計
-  - 動態參數調整
+使用 qumun framework 開發的 Gthulhu 排程器，它會接收來自 ring buffer eBPF Map 的待排程任務資訊，並根據排程策略進行決策。
+最後再將排程結果經過 user ring buffer eBPF Map 回傳給 BPF Scheduler。
 
-## 核心排程演算法
+![](./assets/plugin.png)
 
-### 虛擬執行時間 (vruntime)
+Gthulhu 排程器支援插件化設計，允許開發者根據需求擴展和自定義排程策略。
+[Gthulhu/plugin](https://github.com/Gthulhu/plugin/tree/main/plugin) 目前實作了兩種排程器：
 
-Gthulhu 使用基於虛擬執行時間的公平排程演算法：
-
-```go
-// 虛擬執行時間計算
-vruntime = actual_runtime * NICE_0_WEIGHT / task_weight
-```
-
-#### 關鍵概念
-
-1. **時間片段**
-   ```c
-   // 基本時間片段計算
-   slice_ns = base_slice_ns * (task_weight / NICE_0_WEIGHT)
-   ```
-
-2. **任務權重**
-   ```c
-   // 基於 nice 值的權重計算
-   weight = prio_to_weight[task->static_prio - MAX_RT_PRIO]
-   ```
-
-3. **排程決策**
-   ```c
-   // 選擇具有最小虛擬執行時間的任務
-   next_task = min_vruntime_task(runqueue)
-   ```
-
-### 延遲敏感優化
-
-#### 任務分類
-
-系統自動識別和分類不同類型的任務：
-
-```mermaid
-graph LR
-    A[新任務] --> B{分析任務特性}
-    B -->|頻繁 I/O| C[互動式任務]
-    B -->|CPU 密集| D[批次任務]
-    B -->|混合模式| E[一般任務]
-    
-    C --> F[低延遲優先]
-    D --> G[高吞吐量優先]
-    E --> H[平衡模式]
-```
+- Simple Scheduler：參考 scx_simple 實作的簡易排程器，核心邏輯約 200 行。
+- Gthulhu Scheduler：基於虛擬執行時間的排程器，並加入延遲敏感優化和 CPU 拓撲感知功能。
 
 ## CPU 拓撲感知排程
 
