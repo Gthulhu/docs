@@ -45,7 +45,7 @@ cd docs
 
 2. Install dependencies:
 ```bash
-pip install mkdocs mkdocs-material mkdocs-mermaid2-plugin
+pip install mkdocs mkdocs-material mkdocs-mermaid2-plugin mkdocs-static-i18n
 ```
 
 3. Start the development server:
