@@ -1,122 +1,23 @@
-name: Deploy Documentation to GitHub Pages
-
+name: Publish docs via GitHub Pages
 on:
   push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
-  # 允許手動觸發
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+    branches:
+      - main
 
 jobs:
-  # Build job
   build:
+    name: Deploy docs
     runs-on: ubuntu-latest
     steps:
-      - name: 📥 Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # 獲取完整歷史以支援 git 資訊
-        
-      - name: 🐍 Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: 'requirements.txt'
-          
-      - name: 📋 Create requirements file
-        run: |
-          cat > requirements.txt << EOF
-          mkdocs>=1.5.0
-          mkdocs-material>=9.5.0
-          mkdocs-mermaid2-plugin>=1.1.0
-          mkdocs-static-i18n>=1.2.0
-          pillow>=10.0.0
-          cairosvg>=2.7.0
-          EOF
-          
-      - name: 📦 Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          
-      - name: ✅ Validate MkDocs configuration
-        run: |
-          mkdocs --version
-          python -c "import mkdocs; print('MkDocs installed successfully')"
-          mkdocs build --clean --strict
-          
-      - name: 🔨 Build documentation
-        run: |
-          echo "🏗️ Building documentation..."
-          mkdocs build --clean --strict --verbose
-          echo "📊 Build statistics:"
-          du -sh site/
-          find site/ -name "*.html" | wc -l | xargs echo "HTML files generated:"
-          cp googlebab4e503b693d64f.html site/
-          
-      - name: 🧪 Test built site
-        run: |
-          echo "🔍 Testing built site structure..."
-          test -f site/index.html || (echo "❌ index.html not found" && exit 1)
-          test -f site/zh/index.html || (echo "❌ Chinese index not found" && exit 1)
-          test -d site/zh || (echo "❌ zh directory not found" && exit 1)
-          test -f site/sitemap.xml || (echo "❌ sitemap.xml not found" && exit 1)
-          echo "✅ Site structure validated"
-          echo "📁 Site contents:"
-          ls -la site/
-          echo "📁 Chinese site contents:"
-          ls -la site/zh/
-          
-      - name: 📄 Setup Pages
-        uses: actions/configure-pages@v3
-        
-      - name: 📤 Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./site
-          
-      - name: 🔍 Verify artifact contents
-        run: |
-          echo "📦 Verifying what will be deployed:"
-          find ./site -type f -name "index.html" | head -20
-          echo "---"
-          echo "Total files to deploy:"
-          find ./site -type f | wc -l
+      - name: Checkout main
+        uses: actions/checkout@v2
 
-  # Deployment job
-  deploy:
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: 🚀 Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-        
-      - name: 📝 Comment on PR (if applicable)
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '🚀 Documentation has been built and deployed!\n\n📖 Preview: ${{ steps.deployment.outputs.page_url }}'
-            })
+      - name: Deploy docs
+        uses: mhausenblas/mkdocs-deploy-gh-pages@master
+        # Or use mhausenblas/mkdocs-deploy-gh-pages@nomaterial to build without the mkdocs-material theme
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CUSTOM_DOMAIN: gthulhu.org
+          CONFIG_FILE: ./mkdocs.yml
+          EXTRA_PACKAGES: build-base
+          REQUIREMENTS: ./requirements.txt
