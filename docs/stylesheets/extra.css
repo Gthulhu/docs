@@ -115,16 +115,25 @@ body,
 
 /* 導航列背景色 */
 .md-header {
-  background-color: var(--md-primary-fg-color) !important;
+  background-color: #6a887d !important;
 }
 
 .md-tabs {
-  background-color: var(--md-primary-fg-color) !important;
+  background-color: #6a887d !important;
+}
+
+.md-nav__source {
+  background-color: #6a887d !important;
+}
+
+.md-nav__item .md-nav__link--active, .md-nav__item .md-nav__link--active code,
+.md-nav__item--active>.md-nav__link {
+  color: #6a887d !important;
 }
 
 /* 主要導覽（側邊/抽屜）背景，確保與主題色一致 */
 .md-nav--primary .md-nav__title {
-  background-color: var(--md-primary-fg-color) !important;
+  background-color: #6a887d !important;
 }
 
 /* 導航列字體 - 使用 Orbitron 科技感字體 */
