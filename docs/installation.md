@@ -59,6 +59,7 @@ sudo apt-get install --yes systemtap-sdt-dev
 sudo apt-get install --yes python3 python3-pip ninja-build
 sudo apt-get install --yes libseccomp-dev protobuf-compiler
 sudo apt-get install --yes meson cmake
+sudo apt-get install --yes cargo
 for tool in "clang" "clang-format" "llc" "llvm-strip"
 do
   sudo rm -f /usr/bin/$tool
