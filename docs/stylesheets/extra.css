@@ -1,6 +1,24 @@
 /* Google Fonts - 適合 Gthulhu 的現代科技字體 */
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap');
 
+/* 覆蓋 Material for MkDocs 主題色（讓所有使用主色的元件一致） */
+:root {
+  --md-typeset-a-color: #507c6c !important;
+  --md-primary-fg-color: #6a887d;
+  --md-primary-fg-color--light: #7f9f93; /* 稍微偏亮的主色，用於 hover 等狀態 */
+  --md-primary-fg-color--dark: #4d6a60;  /* 稍微偏暗的主色，用於陰影或深色邊界 */
+  --md-accent-fg-color: #6a887d;         /* 強調色一併設為相同色調（可依需求調整） */
+}
+
+/* 深色模式也同步主題色，避免切換配色時恢復預設藍色 */
+[data-md-color-scheme="slate"] {
+  --md-typeset-a-color: #507c6c !important;
+  --md-primary-fg-color: #6a887d;
+  --md-primary-fg-color--light: #8fb2a5;
+  --md-primary-fg-color--dark: #4d6a60;
+  --md-accent-fg-color: #6a887d;
+}
+
 /* 全站基礎字體設定 */
 body,
 .md-typeset {
@@ -97,11 +115,16 @@ body,
 
 /* 導航列背景色 */
 .md-header {
-  background-color: #6a887d !important;
+  background-color: var(--md-primary-fg-color) !important;
 }
 
 .md-tabs {
-  background-color: #6a887d !important;
+  background-color: var(--md-primary-fg-color) !important;
+}
+
+/* 主要導覽（側邊/抽屜）背景，確保與主題色一致 */
+.md-nav--primary .md-nav__title {
+  background-color: var(--md-primary-fg-color) !important;
 }
 
 /* 導航列字體 - 使用 Orbitron 科技感字體 */
