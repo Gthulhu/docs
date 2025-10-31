@@ -1,0 +1,791 @@
+
+<!DOCTYPE html>
+
+<html class="no-js" lang="zh">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<meta content="Cloud-native workload optimization scheduler based on Linux Scheduler Extension" name="description"/>
+<link href="https://gthulhu.org/zh/development-history/" rel="canonical"/>
+<link href="../project-goals/" rel="prev"/>
+<link href="../api-reference/" rel="next"/>
+<link href="../../assets/images/favicon.png" rel="icon"/>
+<meta content="mkdocs-1.5.3, mkdocs-material-9.5.17" name="generator"/>
+<title>開發歷史 - Gthulhu</title>
+<link href="../../assets/stylesheets/main.bcfcd587.min.css" rel="stylesheet"/>
+<link href="../../assets/stylesheets/palette.06af60db.min.css" rel="stylesheet"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback" rel="stylesheet"/>
+<style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+<link href="../../stylesheets/extra.css" rel="stylesheet"/>
+<script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+<script id="__analytics">function __md_analytics(){function n(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],n("js",new Date),n("config","G-T0RWMB3KJM"),document.addEventListener("DOMContentLoaded",function(){document.forms.search&&document.forms.search.query.addEventListener("blur",function(){this.value&&n("event","search",{search_term:this.value})}),document$.subscribe(function(){var a=document.forms.feedback;if(void 0!==a)for(var e of a.querySelectorAll("[type=submit]"))e.addEventListener("click",function(e){e.preventDefault();var t=document.location.pathname,e=this.getAttribute("data-md-value");n("event","feedback",{page:t,data:e}),a.firstElementChild.disabled=!0;e=a.querySelector(".md-feedback__note [data-md-value='"+e+"']");e&&(e.hidden=!1)}),a.hidden=!1}),location$.subscribe(function(e){n("config","G-T0RWMB3KJM",{page_path:e.pathname})})});var e=document.createElement("script");e.async=!0,e.src="https://www.googletagmanager.com/gtag/js?id=G-T0RWMB3KJM",document.getElementById("__analytics").insertAdjacentElement("afterEnd",e)}</script>
+<script>"undefined"!=typeof __md_analytics&&__md_analytics()</script>
+</head>
+<body data-md-color-accent="indigo" data-md-color-primary="indigo" data-md-color-scheme="default" dir="ltr">
+<input autocomplete="off" class="md-toggle" data-md-toggle="drawer" id="__drawer" type="checkbox"/>
+<input autocomplete="off" class="md-toggle" data-md-toggle="search" id="__search" type="checkbox"/>
+<label class="md-overlay" for="__drawer"></label>
+<div data-md-component="skip">
+<a class="md-skip" href="#_1">
+          跳转至
+        </a>
+</div>
+<div data-md-component="announce">
+</div>
+<header class="md-header" data-md-component="header">
+<nav aria-label="页眉" class="md-header__inner md-grid">
+<a aria-label="Gthulhu" class="md-header__button md-logo" data-md-component="logo" href="../" title="Gthulhu">
+<img alt="logo" src="https://raw.githubusercontent.com/Gthulhu/Gthulhu/main/assets/logo.png"/>
+</a>
+<label class="md-header__button md-icon" for="__drawer">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"></path></svg>
+</label>
+<div class="md-header__title" data-md-component="header-title">
+<div class="md-header__ellipsis">
+<div class="md-header__topic">
+<span class="md-ellipsis">
+            Gthulhu
+          </span>
+</div>
+<div class="md-header__topic" data-md-component="header-topic">
+<span class="md-ellipsis">
+            
+              開發歷史
+            
+          </span>
+</div>
+</div>
+</div>
+<form class="md-header__option" data-md-component="palette">
+<input aria-label="Switch to dark mode" class="md-option" data-md-color-accent="indigo" data-md-color-media="(prefers-color-scheme: light)" data-md-color-primary="indigo" data-md-color-scheme="default" id="__palette_0" name="__palette" type="radio"/>
+<label class="md-header__button md-icon" for="__palette_1" hidden="" title="Switch to dark mode">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5c-.84 0-1.65.15-2.39.42L12 2M3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29L3.34 7m.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14L3.36 17M20.65 7l-1.77 3.79a7.023 7.023 0 0 0-2.38-4.15l4.15.36m-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29L20.64 17M12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44L12 22Z"></path></svg>
+</label>
+<input aria-label="Switch to light mode" class="md-option" data-md-color-accent="indigo" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-primary="indigo" data-md-color-scheme="slate" id="__palette_1" name="__palette" type="radio"/>
+<label class="md-header__button md-icon" for="__palette_0" hidden="" title="Switch to light mode">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3 3.19.09m3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95 2.06.05m-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31Z"></path></svg>
+</label>
+</form>
+<script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+<div class="md-header__option">
+<div class="md-select">
+<button aria-label="选择当前语言" class="md-header__button md-icon">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12.87 15.07-2.54-2.51.03-.03A17.52 17.52 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04M18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12m-2.62 7 1.62-4.33L19.12 17h-3.24Z"></path></svg>
+</button>
+<div class="md-select__inner">
+<ul class="md-select__list">
+<li class="md-select__item">
+<a class="md-select__link" href="../../development-history/" hreflang="en">
+              English
+            </a>
+</li>
+<li class="md-select__item">
+<a class="md-select__link" href="./" hreflang="zh">
+              中文
+            </a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<label class="md-header__button md-icon" for="__search">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"></path></svg>
+</label>
+<div class="md-search" data-md-component="search" role="dialog">
+<label class="md-search__overlay" for="__search"></label>
+<div class="md-search__inner" role="search">
+<form class="md-search__form" name="search">
+<input aria-label="搜索" autocapitalize="off" autocomplete="off" autocorrect="off" class="md-search__input" data-md-component="search-query" name="query" placeholder="搜索" required="" spellcheck="false" type="text"/>
+<label class="md-search__icon md-icon" for="__search">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"></path></svg>
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"></path></svg>
+</label>
+<nav aria-label="查找" class="md-search__options">
+<a aria-label="分享" class="md-search__icon md-icon" data-clipboard="" data-clipboard-text="" data-md-component="search-share" href="javascript:void(0)" tabindex="-1" title="分享">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"></path></svg>
+</a>
+<button aria-label="清空当前内容" class="md-search__icon md-icon" tabindex="-1" title="清空当前内容" type="reset">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"></path></svg>
+</button>
+</nav>
+</form>
+<div class="md-search__output">
+<div class="md-search__scrollwrap" data-md-scrollfix="">
+<div class="md-search-result" data-md-component="search-result">
+<div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+<ol class="md-search-result__list" role="presentation"></ol>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="md-header__source">
+<a class="md-source" data-md-component="source" href="https://github.com/Gthulhu/Gthulhu" title="前往仓库">
+<div class="md-source__icon md-icon">
+<svg viewbox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"></path></svg>
+</div>
+<div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+</div>
+</nav>
+</header>
+<div class="md-container" data-md-component="container">
+<nav aria-label="标签" class="md-tabs" data-md-component="tabs">
+<div class="md-grid">
+<ul class="md-tabs__list">
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../">
+        
+  
+    
+  
+  首頁
+
+      </a>
+</li>
+<li class="md-tabs__item md-tabs__item--active">
+<a class="md-tabs__link" href="../installation/">
+          
+  
+  開始使用
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../contributing/">
+        
+  
+    
+  
+  貢獻指南
+
+      </a>
+</li>
+</ul>
+</div>
+</nav>
+<main class="md-main" data-md-component="main">
+<div class="md-main__inner md-grid">
+<div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav aria-label="导航栏" class="md-nav md-nav--primary md-nav--lifted" data-md-level="0">
+<label class="md-nav__title" for="__drawer">
+<a aria-label="Gthulhu" class="md-nav__button md-logo" data-md-component="logo" href="../" title="Gthulhu">
+<img alt="logo" src="https://raw.githubusercontent.com/Gthulhu/Gthulhu/main/assets/logo.png"/>
+</a>
+    Gthulhu
+  </label>
+<div class="md-nav__source">
+<a class="md-source" data-md-component="source" href="https://github.com/Gthulhu/Gthulhu" title="前往仓库">
+<div class="md-source__icon md-icon">
+<svg viewbox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"></path></svg>
+</div>
+<div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+</div>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../">
+<span class="md-ellipsis">
+    首頁
+  </span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+<input checked="" class="md-nav__toggle md-toggle" id="__nav_2" type="checkbox"/>
+<label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+<span class="md-ellipsis">
+    開始使用
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="true" aria-labelledby="__nav_2_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_2">
+<span class="md-nav__icon md-icon"></span>
+            開始使用
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../installation/">
+<span class="md-ellipsis">
+    安裝
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../k8s/">
+<span class="md-ellipsis">
+    K8s 部署
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../how-it-works/">
+<span class="md-ellipsis">
+    運作原理
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../project-goals/">
+<span class="md-ellipsis">
+    專案目標
+  </span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--active">
+<input class="md-nav__toggle md-toggle" id="__toc" type="checkbox"/>
+<label class="md-nav__link md-nav__link--active" for="__toc">
+<span class="md-ellipsis">
+    開發歷史
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<a class="md-nav__link md-nav__link--active" href="./">
+<span class="md-ellipsis">
+    開發歷史
+  </span>
+</a>
+<nav aria-label="目录" class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">
+<span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+<ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_2">
+<span class="md-ellipsis">
+      專案緣起
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_3">
+<span class="md-ellipsis">
+      基礎設施建設
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_4">
+<span class="md-ellipsis">
+      技術貢獻與修正
+    </span>
+</a>
+<nav aria-label="技術貢獻與修正" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#patch-1-libbpfgo-struct-ops">
+<span class="md-ellipsis">
+      Patch #1: libbpfgo struct-ops 支援
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#patch-2-user-ring-buffer">
+<span class="md-ellipsis">
+      Patch #2: user ring buffer 支援
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#patch-3-ebpf">
+<span class="md-ellipsis">
+      Patch #3: eBPF 文檔修正
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_5">
+<span class="md-ellipsis">
+      移植過程中遇到的問題
+    </span>
+</a>
+<nav aria-label="移植過程中遇到的問題" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#page-fault">
+<span class="md-ellipsis">
+      Page Fault 問題
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#golang-runtime">
+<span class="md-ellipsis">
+      Golang Runtime 複雜度問題
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_6">
+<span class="md-ellipsis">
+      技術架構圖
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_7">
+<span class="md-ellipsis">
+      總結
+    </span>
+</a>
+<nav aria-label="總結" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_8">
+<span class="md-ellipsis">
+      未來考量
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_9">
+<span class="md-ellipsis">
+      技術挑戰摘要
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../api-reference/">
+<span class="md-ellipsis">
+    API 參考
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../faq/">
+<span class="md-ellipsis">
+    常見問題
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../mentioned/">
+<span class="md-ellipsis">
+    相關報導
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../contributing/">
+<span class="md-ellipsis">
+    貢獻指南
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</div>
+</div>
+</div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav aria-label="目录" class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">
+<span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+<ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_2">
+<span class="md-ellipsis">
+      專案緣起
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_3">
+<span class="md-ellipsis">
+      基礎設施建設
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_4">
+<span class="md-ellipsis">
+      技術貢獻與修正
+    </span>
+</a>
+<nav aria-label="技術貢獻與修正" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#patch-1-libbpfgo-struct-ops">
+<span class="md-ellipsis">
+      Patch #1: libbpfgo struct-ops 支援
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#patch-2-user-ring-buffer">
+<span class="md-ellipsis">
+      Patch #2: user ring buffer 支援
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#patch-3-ebpf">
+<span class="md-ellipsis">
+      Patch #3: eBPF 文檔修正
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_5">
+<span class="md-ellipsis">
+      移植過程中遇到的問題
+    </span>
+</a>
+<nav aria-label="移植過程中遇到的問題" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#page-fault">
+<span class="md-ellipsis">
+      Page Fault 問題
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#golang-runtime">
+<span class="md-ellipsis">
+      Golang Runtime 複雜度問題
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_6">
+<span class="md-ellipsis">
+      技術架構圖
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_7">
+<span class="md-ellipsis">
+      總結
+    </span>
+</a>
+<nav aria-label="總結" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_8">
+<span class="md-ellipsis">
+      未來考量
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#_9">
+<span class="md-ellipsis">
+      技術挑戰摘要
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</div>
+</div>
+</div>
+<div class="md-content" data-md-component="content">
+<article class="md-content__inner md-typeset">
+<h1 id="_1">開發歷程</h1>
+<div class="admonition info">
+<p class="admonition-title">作者</p>
+<p><a href="https://www.linkedin.com/in/ian-chen-88b70b1aa/">Yi Chen</a> [<a href="https://github.com/ianchen0119">GitHub</a>], Gthulhu 專案發起人 <a href="mailto:ychen.desl@gmail.com">ychen.desl@gmail.com</a></p>
+</div>
+<p>本頁面記錄了 Gthulhu 和 Qumun 專案的開發歷程、技術挑戰及解決方案。</p>
+<h2 id="_2">專案緣起</h2>
+<p>由於筆者長期潛水在 Jserv 老師的系統軟體社團，在 sched_ext (scx) 發展的初期就得知 Linux 將支援 eBPF-based scheduler。後來在網路上看見 Andrea Righi 在 Rust Lab 2024 的演講「Crafting a Linux kernel scheduler in Rust」，得知 scx 已收錄一種在 userspace 進行 scheduling policy decision 的 eBPF scheduler「scx_rustland」。</p>
+<p>這激發了使用 Golang 重造這款 scheduler 的想法，主要原因包括：</p>
+<ul>
+<li>已有開源的 libbpfgo 可利用</li>
+<li>Golang 的開發難度較 Rust 更低</li>
+<li>使用 Golang 開發 K8s operator 較為方便</li>
+</ul>
+<h2 id="_3">基礎設施建設</h2>
+<p>在開始重建工作之前，需要搭建一些基礎設施：</p>
+<ol>
+<li><strong>libbpfgo 支援評估</strong>: 能否支援 scx 類型的 eBPF program？API 實作是否完善？</li>
+<li><strong>skeleton 工具</strong>: 有沒有便捷的方式讓 golang application 使用 eBPF skeleton？</li>
+</ol>
+<p>起初過度樂觀地以為只要讓 libbpfgo 支援 struct-ops map attachment 就能在 golang 上重現 scx_rustland 所做的事情，但事實總是距離理想非常遠。</p>
+<h2 id="_4">技術貢獻與修正</h2>
+<h3 id="patch-1-libbpfgo-struct-ops">Patch #1: libbpfgo struct-ops 支援</h3>
+<p><strong>連結</strong>: <a href="https://github.com/aquasecurity/libbpfgo/pull/476">feat: add AttachStructOps() #476 for aquasecurity/libbpfgo</a></p>
+<p>要使用 golang 開發 scx-based scheduler 的首要任務就是讓 golang application 能夠管理 struct-ops 類型的 BPF Map。然而，libbpfgo 並不支援相關的 APIs，因此需要擴充 libbpfgo。</p>
+<p>主要改動內容：</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-0-1" id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">m</span><span class="w"> </span><span class="o">*</span><span class="nx">BPFMap</span><span class="p">)</span><span class="w"> </span><span class="nx">AttachStructOps</span><span class="p">()</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-0-2" id="__codelineno-0-2" name="__codelineno-0-2"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">m</span><span class="p">.</span><span class="nx">Type</span><span class="p">().</span><span class="nx">String</span><span class="p">()</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nx">MapTypeStructOps</span><span class="p">.</span><span class="nx">String</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-0-3" id="__codelineno-0-3" name="__codelineno-0-3"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="s">"Map type should be BPF_MAP_TYPE_STRUCT_OPS"</span><span class="p">)</span>
+<a href="#__codelineno-0-4" id="__codelineno-0-4" name="__codelineno-0-4"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-0-5" id="__codelineno-0-5" name="__codelineno-0-5"></a><span class="w">    </span><span class="nx">linkC</span><span class="p">,</span><span class="w"> </span><span class="nx">errno</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">C</span><span class="p">.</span><span class="nx">bpf_map__attach_struct_ops</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">bpfMap</span><span class="p">)</span>
+<a href="#__codelineno-0-6" id="__codelineno-0-6" name="__codelineno-0-6"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">linkC</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-0-7" id="__codelineno-0-7" name="__codelineno-0-7"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="s">"Map attach failed: %v"</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">errno</span><span class="p">)</span>
+<a href="#__codelineno-0-8" id="__codelineno-0-8" name="__codelineno-0-8"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-0-9" id="__codelineno-0-9" name="__codelineno-0-9"></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span>
+<a href="#__codelineno-0-10" id="__codelineno-0-10" name="__codelineno-0-10"></a><span class="p">}</span>
+</code></pre></div>
+<p>花費較多時間的是撰寫 selftest，選擇使用 golang 撰寫 scx-simple 的 user space agent 作為該 patch 的 selftest。</p>
+<p>此外，該專案所採用的 CI Runner 的 kernel 版本為 v6.8，但 scheduler extension 需要 v6.12 以上的核心。經過討論後接受 arighi 的建議，在測試中採用 virtme-ng。</p>
+<h3 id="patch-2-user-ring-buffer">Patch #2: user ring buffer 支援</h3>
+<p><strong>連結</strong>: <a href="https://github.com/aquasecurity/libbpfgo/pull/480">support user ring buffer #480 for aquasecurity/libbpfgo</a></p>
+<p>嘗試實作 scx_goland 時發現 libbpfgo 並沒有支援 user-ring-buffer 類型 BPF map 的 API。</p>
+<p>scx_rustland_core 的架構圖顯示，scx_goland（scx_rustland）高度仰賴 user-ring-buffer map（作用與 ring buffer 一樣，但傳遞順序相反，讓 user space application 能夠傳遞消息到 BPF program）。</p>
+<p>有了這兩個 Patch，golang 就被賦予了載入 scx eBPF program 和傳遞 scheduling decision 至 eBPF scheduler 的能力。</p>
+<h3 id="patch-3-ebpf">Patch #3: eBPF 文檔修正</h3>
+<p><strong>連結</strong>: <a href="https://github.com/isovalent/ebpf-docs/pull/119">chore: update BPF_PROG_TEST_RUN.md for isovalent/ebpf-docs</a></p>
+<p>自 Linux kernel v5.14 開始，kernel 支援 <code>BPF_PROG_TYPE_SYSCALL</code> 類型的 eBPF program。需要注意的是，它僅能透過 system call 執行，對應的 system call 即 BPF system call。</p>
+<p>為了執行 <code>BPF_PROG_TYPE_SYSCALL</code> 類型的 eBPF program，eBPF 提供了 <code>BPF_PROG_TEST_RUN</code>，該命令能夠調用以下類型的 eBPF program：</p>
+<ul>
+<li><code>BPF_PROG_TYPE_SOCK_OPS</code></li>
+<li><code>BPF_PROG_TYPE_SYSCALL</code></li>
+<li><code>BPF_PROG_TYPE_RAW_TRACEPOINT</code></li>
+<li><code>BPF_PROG_TYPE_TRACING</code></li>
+<li><code>BPF_PROG_TYPE_SOCKET_FILTER</code></li>
+<li><code>BPF_PROG_TYPE_SCHED_CLS</code></li>
+<li><code>BPF_PROG_TYPE_SCHED_ACT</code></li>
+<li><code>BPF_PROG_TYPE_XDP</code></li>
+<li><code>BPF_PROG_TYPE_CGROUP_SKB</code></li>
+<li><code>BPF_PROG_TYPE_LWT_IN</code></li>
+<li><code>BPF_PROG_TYPE_LWT_OUT</code></li>
+<li><code>BPF_PROG_TYPE_LWT_XMIT</code></li>
+<li><code>BPF_PROG_TYPE_LWT_SEG6LOCAL</code></li>
+<li><code>BPF_PROG_TYPE_FLOW_DISSECTOR</code></li>
+</ul>
+<p>在 scx_goland（scx_rustland）中使用 <code>BPF_PROG_TYPE_SYSCAL</code> 類型的 program，讓 user-space program 得以呼叫客製化的函式為剛喚醒的任務選擇一個 CPU（也就是 scheduler_extension 文件提到的 select_cpu hook）：</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-1-1" id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="cm">/*</span>
+<a href="#__codelineno-1-2" id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="cm"> * Select and wake-up an idle CPU for a specific task from the user-space</span>
+<a href="#__codelineno-1-3" id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="cm"> * scheduler.</span>
+<a href="#__codelineno-1-4" id="__codelineno-1-4" name="__codelineno-1-4"></a><span class="cm"> */</span>
+<a href="#__codelineno-1-5" id="__codelineno-1-5" name="__codelineno-1-5"></a><span class="n">SEC</span><span class="p">(</span><span class="s">"syscall"</span><span class="p">)</span>
+<a href="#__codelineno-1-6" id="__codelineno-1-6" name="__codelineno-1-6"></a><span class="kt">int</span><span class="w"> </span><span class="n">rs_select_cpu</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">task_cpu_arg</span><span class="w"> </span><span class="o">*</span><span class="n">input</span><span class="p">)</span>
+<a href="#__codelineno-1-7" id="__codelineno-1-7" name="__codelineno-1-7"></a><span class="p">{</span>
+<a href="#__codelineno-1-8" id="__codelineno-1-8" name="__codelineno-1-8"></a><span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">task_struct</span><span class="w"> </span><span class="o">*</span><span class="n">p</span><span class="p">;</span>
+<a href="#__codelineno-1-9" id="__codelineno-1-9" name="__codelineno-1-9"></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">cpu</span><span class="p">;</span>
+<a href="#__codelineno-1-10" id="__codelineno-1-10" name="__codelineno-1-10"></a>
+<a href="#__codelineno-1-11" id="__codelineno-1-11" name="__codelineno-1-11"></a><span class="w">    </span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bpf_task_from_pid</span><span class="p">(</span><span class="n">input</span><span class="o">-&gt;</span><span class="n">pid</span><span class="p">);</span>
+<a href="#__codelineno-1-12" id="__codelineno-1-12" name="__codelineno-1-12"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">p</span><span class="p">)</span>
+<a href="#__codelineno-1-13" id="__codelineno-1-13" name="__codelineno-1-13"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="n">EINVAL</span><span class="p">;</span>
+<a href="#__codelineno-1-14" id="__codelineno-1-14" name="__codelineno-1-14"></a>
+<a href="#__codelineno-1-15" id="__codelineno-1-15" name="__codelineno-1-15"></a><span class="w">    </span><span class="n">bpf_rcu_read_lock</span><span class="p">();</span>
+<a href="#__codelineno-1-16" id="__codelineno-1-16" name="__codelineno-1-16"></a><span class="w">    </span><span class="n">cpu</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pick_idle_cpu</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">input</span><span class="o">-&gt;</span><span class="n">cpu</span><span class="p">);</span>
+<a href="#__codelineno-1-17" id="__codelineno-1-17" name="__codelineno-1-17"></a><span class="w">    </span><span class="n">bpf_rcu_read_unlock</span><span class="p">();</span>
+<a href="#__codelineno-1-18" id="__codelineno-1-18" name="__codelineno-1-18"></a>
+<a href="#__codelineno-1-19" id="__codelineno-1-19" name="__codelineno-1-19"></a><span class="w">    </span><span class="n">bpf_task_release</span><span class="p">(</span><span class="n">p</span><span class="p">);</span>
+<a href="#__codelineno-1-20" id="__codelineno-1-20" name="__codelineno-1-20"></a>
+<a href="#__codelineno-1-21" id="__codelineno-1-21" name="__codelineno-1-21"></a><span class="w">    </span><span class="cm">/*</span>
+<a href="#__codelineno-1-22" id="__codelineno-1-22" name="__codelineno-1-22"></a><span class="cm">     * Wake-up the CPU if idle. Use SCX_KICK_IDLE to prevent unecessary</span>
+<a href="#__codelineno-1-23" id="__codelineno-1-23" name="__codelineno-1-23"></a><span class="cm">     * rescheduling events in case the CPU is already awake (since we don't</span>
+<a href="#__codelineno-1-24" id="__codelineno-1-24" name="__codelineno-1-24"></a><span class="cm">     * know exactly what the user-space scheduler is doing we can't</span>
+<a href="#__codelineno-1-25" id="__codelineno-1-25" name="__codelineno-1-25"></a><span class="cm">     * implicitly assume that the target CPU is idle here).</span>
+<a href="#__codelineno-1-26" id="__codelineno-1-26" name="__codelineno-1-26"></a><span class="cm">     */</span>
+<a href="#__codelineno-1-27" id="__codelineno-1-27" name="__codelineno-1-27"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">cpu</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<a href="#__codelineno-1-28" id="__codelineno-1-28" name="__codelineno-1-28"></a><span class="w">        </span><span class="n">scx_bpf_kick_cpu</span><span class="p">(</span><span class="n">cpu</span><span class="p">,</span><span class="w"> </span><span class="n">SCX_KICK_IDLE</span><span class="p">);</span>
+<a href="#__codelineno-1-29" id="__codelineno-1-29" name="__codelineno-1-29"></a>
+<a href="#__codelineno-1-30" id="__codelineno-1-30" name="__codelineno-1-30"></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">cpu</span><span class="p">;</span>
+<a href="#__codelineno-1-31" id="__codelineno-1-31" name="__codelineno-1-31"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>重要發現</strong>: 在使用 <code>BPF_PROG_TEST_RUN</code> command 時翻閱 eBPF-docs 文件得知 <code>BPF_PROG_TYPE_SYSCALL</code> 類型的 eBPF program 僅需要傳入 <code>ctx_in</code> 參數。<strong>但這部分的資訊是錯誤的</strong>，實際上 <code>ctx_size_in</code> 也需要被帶入，<code>BPF_PROG_TYPE_SYSCALL</code> 類型的 eBPF program 才能順利執行。</p>
+<p>這部分讓筆者卡了不少時間（一度懷疑是 libbpfgo 沒有寫好），最後才發現是文件的問題。目前 eBPF 文件對於 <code>ctx_size_in</code> 的論述已得到修正，其他開發者也可以少踩一些坑。</p>
+<h2 id="_5">移植過程中遇到的問題</h2>
+<h3 id="page-fault">Page Fault 問題</h3>
+<p>修改基礎設施雖然花上了一些時間，但 Patch 的推進與否其實不影響開發 scheduler，因為可以在 PR merged 之前使用 forked repo 替代。</p>
+<p>然而，當補足 libbpfgo 必要的 APIs 後卻遇到了<strong>系統停滯的問題</strong>，該問題會發生在 scx_goland loaded 之後，系統會停滯約五秒的時間才恢復正常（剛好等於 watch dog 踢除排程器的 timeout 設定值）。</p>
+<p>起初懷疑是自己新增的 user_ringbuffer 沒有順利的將 dispatched task 傳達給 eBPF program，隨後透過單元測試驗證否定了這個假設。</p>
+<p>思考了許久實在沒有頭緒，因此向 Andrea Righi 請教，這才得知是因為 <strong>golang 所開發的 user-space agent 會遇到 page fault 的問題</strong>（Andrea Righi 會這麼篤定是因為他在開發 scx_rustland 時也遇到了同樣的問題，他是利用 buddy allocator 來避免 page fault 發生）。</p>
+<p>若 user-space agent 發生 page fault，會導致所有的任務分配暫停，而 page fault 又仰賴 kthread 來解決，這就導致了 deadlock 發生。</p>
+<p><strong>解決方案評估</strong>:</p>
+<ol>
+<li>改用 TinyGo 編譯</li>
+<li>依樣畫葫蘆，在 golang 實作 buddy allocator</li>
+<li>讓所有 kthread 直接由 eBPF 排程</li>
+</ol>
+<p>前兩者會需要更多的時間完成，考慮到時間成本，先選擇了方案 #3：</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-2-1" id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="kt">void</span><span class="w"> </span><span class="nf">BPF_STRUCT_OPS</span><span class="p">(</span><span class="n">goland_enqueue</span><span class="p">,</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">task_struct</span><span class="w"> </span><span class="o">*</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">u64</span><span class="w"> </span><span class="n">enq_flags</span><span class="p">)</span>
+<a href="#__codelineno-2-2" id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="p">{</span>
+<a href="#__codelineno-2-3" id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">queued_task_ctx</span><span class="w"> </span><span class="o">*</span><span class="n">task</span><span class="p">;</span>
+<a href="#__codelineno-2-4" id="__codelineno-2-4" name="__codelineno-2-4"></a>
+<a href="#__codelineno-2-5" id="__codelineno-2-5" name="__codelineno-2-5"></a><span class="w">    </span><span class="c1">// ...</span>
+<a href="#__codelineno-2-6" id="__codelineno-2-6" name="__codelineno-2-6"></a>
+<a href="#__codelineno-2-7" id="__codelineno-2-7" name="__codelineno-2-7"></a><span class="w">    </span><span class="cm">/*</span>
+<a href="#__codelineno-2-8" id="__codelineno-2-8" name="__codelineno-2-8"></a><span class="cm">     * WORKAROUND: Dispatch user-space scheduler to the shared DSQ to avoid</span>
+<a href="#__codelineno-2-9" id="__codelineno-2-9" name="__codelineno-2-9"></a><span class="cm">     * starvation on user space scheduler goroutine(s).</span>
+<a href="#__codelineno-2-10" id="__codelineno-2-10" name="__codelineno-2-10"></a><span class="cm">     */</span>
+<a href="#__codelineno-2-11" id="__codelineno-2-11" name="__codelineno-2-11"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">is_belong_usersched_task</span><span class="p">(</span><span class="n">p</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-2-12" id="__codelineno-2-12" name="__codelineno-2-12"></a><span class="w">        </span><span class="n">scx_bpf_dsq_insert_vtime</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">SHARED_DSQ</span><span class="p">,</span>
+<a href="#__codelineno-2-13" id="__codelineno-2-13" name="__codelineno-2-13"></a><span class="w">            </span><span class="n">SCX_SLICE_INF</span><span class="p">,</span><span class="w"> </span><span class="mi">-1ULL</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<a href="#__codelineno-2-14" id="__codelineno-2-14" name="__codelineno-2-14"></a><span class="w">        </span><span class="n">__sync_fetch_and_add</span><span class="p">(</span><span class="o">&amp;</span><span class="n">nr_kernel_dispatches</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<a href="#__codelineno-2-15" id="__codelineno-2-15" name="__codelineno-2-15"></a><span class="w">        </span><span class="n">kick_task_cpu</span><span class="p">(</span><span class="n">p</span><span class="p">);</span>
+<a href="#__codelineno-2-16" id="__codelineno-2-16" name="__codelineno-2-16"></a><span class="w">        </span><span class="k">return</span><span class="p">;</span>
+<a href="#__codelineno-2-17" id="__codelineno-2-17" name="__codelineno-2-17"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-2-18" id="__codelineno-2-18" name="__codelineno-2-18"></a><span class="w">    </span><span class="c1">// ...</span>
+<a href="#__codelineno-2-19" id="__codelineno-2-19" name="__codelineno-2-19"></a><span class="p">}</span>
+</code></pre></div>
+<h3 id="golang-runtime">Golang Runtime 複雜度問題</h3>
+<p>避免掉 page fault 後，發現排程器仍然會卡住，經過了一段時間才注意到是 <strong>golang runtime 造成的問題</strong>。</p>
+<p>以 scx_rustland 為例，user space agent 會將自己的 PID 告訴 eBPF program，讓 user space agent 可以不用經過 agent 直接由 eBPF scheduler 進行排程。但在使用 golang 重造 agent 時卻忽略了 golang runtime 的複雜度，即使將 <code>GOMAXPROC</code> 設置為 1 的情況下，golang runtime 仍會建立多個 M（一個 M 對應一個 Kernel Scheduling Entry）。</p>
+<p>因此，只有單個 process 被排程是無法讓 golang agent 正常工作的，我們要讓相關聯的 M 都能夠直接被 eBPF scheduler 排程：</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-3-1" id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="cm">/*</span>
+<a href="#__codelineno-3-2" id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="cm"> * Return true if the target task @p belongs to the user-space scheduler.</span>
+<a href="#__codelineno-3-3" id="__codelineno-3-3" name="__codelineno-3-3"></a><span class="cm"> */</span>
+<a href="#__codelineno-3-4" id="__codelineno-3-4" name="__codelineno-3-4"></a><span class="k">static</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="nf">is_belong_usersched_task</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">task_struct</span><span class="w"> </span><span class="o">*</span><span class="n">p</span><span class="p">)</span>
+<a href="#__codelineno-3-5" id="__codelineno-3-5" name="__codelineno-3-5"></a><span class="p">{</span>
+<a href="#__codelineno-3-6" id="__codelineno-3-6" name="__codelineno-3-6"></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">p</span><span class="o">-&gt;</span><span class="n">tgid</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">usersched_pid</span><span class="p">;</span>
+<a href="#__codelineno-3-7" id="__codelineno-3-7" name="__codelineno-3-7"></a><span class="p">}</span>
+</code></pre></div>
+<p>該函式會判斷 task 的 tgid 是否屬於 golang agent，如果是，則會在 <code>.enqueue</code> hook 時由 eBPF scheduler 直接排程：</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-4-1" id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="w"> </span><span class="cm">/*</span>
+<a href="#__codelineno-4-2" id="__codelineno-4-2" name="__codelineno-4-2"></a><span class="cm">  * WORKAROUND: Dispatch user-space scheduler to the shared DSQ to avoid</span>
+<a href="#__codelineno-4-3" id="__codelineno-4-3" name="__codelineno-4-3"></a><span class="cm">  * starvation on user space scheduler goroutine(s).</span>
+<a href="#__codelineno-4-4" id="__codelineno-4-4" name="__codelineno-4-4"></a><span class="cm">  */</span>
+<a href="#__codelineno-4-5" id="__codelineno-4-5" name="__codelineno-4-5"></a><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">is_belong_usersched_task</span><span class="p">(</span><span class="n">p</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-4-6" id="__codelineno-4-6" name="__codelineno-4-6"></a><span class="w">  </span><span class="n">scx_bpf_dsq_insert_vtime</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">SHARED_DSQ</span><span class="p">,</span>
+<a href="#__codelineno-4-7" id="__codelineno-4-7" name="__codelineno-4-7"></a><span class="w">      </span><span class="n">SCX_SLICE_INF</span><span class="p">,</span><span class="w"> </span><span class="mi">-1ULL</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<a href="#__codelineno-4-8" id="__codelineno-4-8" name="__codelineno-4-8"></a><span class="w">  </span><span class="n">__sync_fetch_and_add</span><span class="p">(</span><span class="o">&amp;</span><span class="n">nr_kernel_dispatches</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<a href="#__codelineno-4-9" id="__codelineno-4-9" name="__codelineno-4-9"></a><span class="w">  </span><span class="n">kick_task_cpu</span><span class="p">(</span><span class="n">p</span><span class="p">);</span>
+<a href="#__codelineno-4-10" id="__codelineno-4-10" name="__codelineno-4-10"></a><span class="w">  </span><span class="k">return</span><span class="p">;</span>
+<a href="#__codelineno-4-11" id="__codelineno-4-11" name="__codelineno-4-11"></a><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<h2 id="_6">技術架構圖</h2>
+<p>Golang Runtime 的 G-M-P 模型：</p>
+<pre class="mermaid"><code>graph TB
+    subgraph "Golang Runtime"
+        G1[Goroutine 1] --&gt; M1[OS Thread 1]
+        G2[Goroutine 2] --&gt; M1
+        G3[Goroutine 3] --&gt; M2[OS Thread 2]
+        G4[Goroutine 4] --&gt; M2
+
+        M1 --&gt; P1[Processor 1]
+        M2 --&gt; P2[Processor 2]
+    end
+
+    subgraph "eBPF Scheduler"
+        P1 --&gt; S[SCX Scheduler]
+        P2 --&gt; S
+        S --&gt; K[Kernel Space]
+    end
+</code></pre>
+<h2 id="_7">總結</h2>
+<p>經過一系列的努力，使用 golang 開發 Linux 排程器的"幻想"得以實現（雖然目前的實作效能不佳）：</p>
+<p><strong>專案連結</strong>: <a href="https://github.com/Gthulhu/scx_goland_core">https://github.com/Gthulhu/scx_goland_core</a></p>
+<h3 id="_8">未來考量</h3>
+<p>最初希望 scx_goland_core 能夠被 scx 專案接受，但考慮到以下幾點，暫時打消了這個念頭：</p>
+<ol>
+<li><strong>維護負擔</strong>: 貢獻到 upstream 意味著之後的更動都需要耗費大量時間，沒辦法根據需求快速的推進某項 patch 的進度</li>
+<li><strong>專案整合</strong>: scx_goland_core 只是實現終極目標的一項基礎設施，預期之後還會有對應的 golang scheduler 實作、k8s operator 會放在同一個專案下。除非 scx 有辦法接受所有衍伸的專案，否則在這個時間點貢獻到 upstream 會影響之後開發的靈活度</li>
+</ol>
+<h3 id="_9">技術挑戰摘要</h3>
+<table>
+<thead>
+<tr>
+<th>挑戰</th>
+<th>問題描述</th>
+<th>解決方案</th>
+<th>狀態</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>struct-ops 支援</td>
+<td>libbpfgo 缺少 struct-ops map 支援</td>
+<td>貢獻 PR #476</td>
+<td>✅ 已解決</td>
+</tr>
+<tr>
+<td>user ring buffer</td>
+<td>缺少 user-ring-buffer API</td>
+<td>貢獻 PR #480</td>
+<td>✅ 已解決</td>
+</tr>
+<tr>
+<td>文檔錯誤</td>
+<td>BPF_PROG_TEST_RUN 文檔缺少 ctx_size_in</td>
+<td>修正官方文檔</td>
+<td>✅ 已解決</td>
+</tr>
+<tr>
+<td>Page Fault</td>
+<td>Golang agent 引起系統停滯</td>
+<td>kthread 直接 eBPF 排程</td>
+<td>✅ 已緩解</td>
+</tr>
+<tr>
+<td>Runtime 複雜度</td>
+<td>Golang M:N 模型導致排程問題</td>
+<td>tgid 群組排程</td>
+<td>✅ 已解決</td>
+</tr>
+</tbody>
+</table>
+<hr/>
+<div class="admonition tip">
+<p class="admonition-title">參與貢獻</p>
+<p>如果你對於這個專案感興趣，也可以嘗試提交 Patch 喔 :)</p>
+</div>
+</article>
+</div>
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+</div>
+<button class="md-top md-icon" data-md-component="top" hidden="" type="button">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"></path></svg>
+  回到页面顶部
+</button>
+</main>
+<footer class="md-footer">
+<div class="md-footer-meta md-typeset">
+<div class="md-footer-meta__inner md-grid">
+<div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" rel="noopener" target="_blank">
+      Material for MkDocs
+    </a>
+</div>
+</div>
+</div>
+</footer>
+</div>
+<div class="md-dialog" data-md-component="dialog">
+<div class="md-dialog__inner md-typeset"></div>
+</div>
+<script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "search.highlight", "search.share", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}}</script>
+<script src="../../assets/javascripts/bundle.1e8ae164.min.js"></script>
+<script type="module">import mermaid from "https://unpkg.com/mermaid@10.4.0/dist/mermaid.esm.min.mjs";
+window.mermaidConfig = {default: {
+    startOnLoad: false
+}};</script></body>
+</html>
