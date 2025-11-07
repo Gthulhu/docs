@@ -39,13 +39,17 @@ cat /proc/config.gz | gunzip | grep "CONFIG_SCHED_CLASS_EXT"
 grep -r "CONFIG_BPF" /boot/config-$(uname -r) | head -5
 ```
 
-## 在 Ubuntu 25.04 上安裝 Gthulhu
-​
-為了節省各位的時間，我們直接跳過編譯 kernel 與安裝 kernel 的過程，使用[直接支援 sched_ext 的 Ubuntu 25.04 ](https://canonical.com/blog/canonical-releases-ubuntu-25-04-plucky-puffin)。
-​
-讀者可以直接使用以下腳本安裝必要的套件：
+## 針對不同發行版的安裝方式
 
-```sh
+請根據您的 Linux 發行版選擇以下詳細安裝說明。
+
+### Ubuntu 25.04
+
+為了節省各位的時間，我們直接跳過編譯 kernel 與安裝 kernel 的過程，使用[直接支援 sched_ext 的 Ubuntu 25.04](https://canonical.com/blog/canonical-releases-ubuntu-25-04-plucky-puffin)。
+
+#### 安裝相依套件
+
+```bash
 sudo apt-get update
 sudo apt-get install --yes bsdutils
 sudo apt-get install --yes build-essential
@@ -58,37 +62,86 @@ sudo apt-get install --yes systemtap-sdt-dev
 sudo apt-get install --yes python3 python3-pip ninja-build
 sudo apt-get install --yes libseccomp-dev protobuf-compiler
 sudo apt-get install --yes meson cmake
+sudo apt-get install --yes cargo
+```
+
+#### 設定 Clang
+
+```bash
 for tool in "clang" "clang-format" "llc" "llvm-strip"
 do
   sudo rm -f /usr/bin/$tool
   sudo ln -s /usr/bin/$tool-17 /usr/bin/$tool
 done
+```
+
+#### 安裝 Rust
+
+```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source $HOME/.cargo/env
 ```
 
-這些套件包含了所有編譯 scx 的必要套件。
-​
-在編譯 Gthulhu 之前，我們還需要安裝 golang：
+### openSUSE Tumbleweed
 
-```sh
+openSUSE Tumbleweed 提供滾動更新，並支援 kernel 6.12+ 及 sched_ext。
+
+#### 安裝相依套件
+
+```bash
+# 更新套件庫
+sudo zypper refresh
+
+# 安裝建置工具與編譯器
+sudo zypper install -y gcc make cmake meson ninja pkg-config rust cargo
+
+# 安裝 LLVM/Clang 18+（最低需求：17）
+sudo zypper install -y llvm18 clang18 clang18-devel
+
+# 安裝開發函式庫
+sudo zypper install -y libbpf-devel libelf-devel libzstd-devel zlib-devel
+
+# 安裝額外的建置相依套件
+sudo zypper install -y systemtap-sdt-devel libseccomp-devel jq protobuf-devel
+
+# 安裝靜態函式庫以進行靜態連結
+sudo zypper install -y zlib-devel-static libzstd-devel-static
+```
+
+#### 設定 Clang
+
+```bash
+for tool in "clang" "clang-format" "llc" "llvm-strip"
+do
+  sudo rm -f /usr/bin/$tool
+  sudo ln -s /usr/bin/$tool-18 /usr/bin/$tool
+done
+```
+
+## 安裝 Go
+
+在編譯 Gthulhu 之前，請先安裝 Golang（需求版本：1.22+）：
+
+```bash
 wget https://go.dev/dl/go1.24.2.linux-amd64.tar.gz
 sudo tar -C /usr/local -xzf go1.24.2.linux-amd64.tar.gz
 ```
 ​
 新增以下內容至 `~/.profile`：
 
-```sh
+```bash
 export GOROOT=/usr/local/go
 export GOPATH=$HOME/go
 export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
 ```
 ​
 新增後，記得使用 `source ~/.profile` 讓變更的內容生效。
-​
-安裝完必要套件後，安裝 Gthulhu：
 
-```sh
+## 編譯 Gthulhu
+
+安裝完必要套件後，複製並編譯 Gthulhu：
+
+```bash
 git clone https://github.com/Gthulhu/Gthulhu.git
 cd Gthulhu
 make dep
