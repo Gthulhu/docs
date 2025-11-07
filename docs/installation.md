@@ -39,14 +39,18 @@ cat /proc/config.gz | gunzip | grep "CONFIG_SCHED_CLASS_EXT"
 grep -r "CONFIG_BPF" /boot/config-$(uname -r) | head -5
 ```
 
-## Install Gthulhu on Ubuntu 25.04
+## Distribution-Specific Installation
+
+Choose your Linux distribution below for detailed installation instructions.
+
+### Ubuntu 25.04
 
 To save time, we skip kernel compilation/installation and use Ubuntu 25.04 which directly supports sched_ext:
 https://canonical.com/blog/canonical-releases-ubuntu-25-04-plucky-puffin
 
-Use the following script to install required packages:
+#### Install Dependencies
 
-```sh
+```bash
 sudo apt-get update
 sudo apt-get install --yes bsdutils
 sudo apt-get install --yes build-essential
@@ -60,51 +64,110 @@ sudo apt-get install --yes python3 python3-pip ninja-build
 sudo apt-get install --yes libseccomp-dev protobuf-compiler
 sudo apt-get install --yes meson cmake
 sudo apt-get install --yes cargo
+```
+
+#### Configure Clang
+
+```bash
 for tool in "clang" "clang-format" "llc" "llvm-strip"
 do
   sudo rm -f /usr/bin/$tool
   sudo ln -s /usr/bin/$tool-17 /usr/bin/$tool
 done
+```
+
+#### Install Rust
+
+```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source $HOME/.cargo/env
 ```
 
-These packages include everything needed to build scx.
+### openSUSE Tumbleweed
 
-Before building Gthulhu, install Golang:
+openSUSE Tumbleweed provides rolling updates and supports kernel 6.12+ with sched_ext.
 
-```sh
+#### Install Dependencies
+
+```bash
+# Update package repository
+sudo zypper refresh
+
+# Install build tools and compilers
+sudo zypper install -y gcc make cmake meson ninja pkg-config rust cargo
+
+# Install LLVM/Clang 18+ (minimum required: 17)
+sudo zypper install -y llvm18 clang18 clang18-devel
+
+# Install development libraries
+sudo zypper install -y libbpf-devel libelf-devel libzstd-devel zlib-devel
+
+# Install additional build dependencies
+sudo zypper install -y systemtap-sdt-devel libseccomp-devel jq protobuf-devel
+
+# Install static libraries for static linking
+sudo zypper install -y zlib-devel-static libzstd-devel-static
+```
+
+#### Configure Clang
+
+```bash
+for tool in "clang" "clang-format" "llc" "llvm-strip"
+do
+  sudo rm -f /usr/bin/$tool
+  sudo ln -s /usr/bin/$tool-18 /usr/bin/$tool
+done
+```
+
+## Install Go
+
+Before building Gthulhu, install Golang (required version: 1.22+):
+
+```bash
 wget https://go.dev/dl/go1.24.2.linux-amd64.tar.gz
 sudo tar -C /usr/local -xzf go1.24.2.linux-amd64.tar.gz
 ```
 
-Add the following to ~/.profile:
+Add the following to `~/.profile`:
 
-```sh
+```bash
 export GOROOT=/usr/local/go
 export GOPATH=$HOME/go
 export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
 ```
 
-After adding, run source ~/.profile to apply the changes.
+After adding, run `source ~/.profile` to apply the changes.
 
-After the prerequisites are installed, install Gthulhu:
+## Build Gthulhu
 
-```sh
+After the prerequisites are installed, clone and build Gthulhu:
+
+```bash
+# Clone repository
 git clone https://github.com/Gthulhu/Gthulhu.git
 cd Gthulhu
+
+# Clone libbpf dependency
 make dep
+
+# Initialize and update submodules
 git submodule init
 git submodule sync
 git submodule update
+
+# Build sched_ext framework
 cd scx
 meson setup build --prefix ~
 meson compile -C build
 cd ..
+
+# Build libbpfgo
 cd libbpfgo
 make
 cd ..
-make
+
+# Build Gthulhu
+make 
 ```
 
 After compilation, Gthulhu should run successfully on your system:
