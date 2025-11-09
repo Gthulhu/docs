@@ -25,7 +25,16 @@ This guide helps you install and configure Gthulhu and Qumun.
 | make | - | Build tool |
 | git | - | Version control |
 
-#### Check Kernel Support
+## Distribution-Specific Installation
+
+Choose your Linux distribution below for detailed installation instructions.
+
+### Ubuntu 25.04
+
+To save time, we skip kernel compilation/installation and use Ubuntu 25.04 which directly supports sched_ext:
+https://canonical.com/blog/canonical-releases-ubuntu-25-04-plucky-puffin
+
+#### Verify Kernel Support
 
 ```bash
 # Check kernel version
@@ -38,15 +47,6 @@ cat /proc/config.gz | gunzip | grep "CONFIG_SCHED_CLASS_EXT"
 # Check BPF support
 grep -r "CONFIG_BPF" /boot/config-$(uname -r) | head -5
 ```
-
-## Distribution-Specific Installation
-
-Choose your Linux distribution below for detailed installation instructions.
-
-### Ubuntu 25.04
-
-To save time, we skip kernel compilation/installation and use Ubuntu 25.04 which directly supports sched_ext:
-https://canonical.com/blog/canonical-releases-ubuntu-25-04-plucky-puffin
 
 #### Install Dependencies
 
@@ -76,16 +76,23 @@ do
 done
 ```
 
-#### Install Rust
-
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source $HOME/.cargo/env
-```
-
 ### openSUSE Tumbleweed
 
 openSUSE Tumbleweed provides rolling updates and supports kernel 6.12+ with sched_ext.
+
+#### Verify Kernel Support
+
+```bash
+# Check kernel version
+uname -r
+
+# Check sched_ext support
+grep -r "CONFIG_SCHED_CLASS_EXT" /boot/config-$(uname -r) || \
+cat /proc/config.gz | gunzip | grep "CONFIG_SCHED_CLASS_EXT"
+
+# Check BPF support
+grep -r "CONFIG_BPF" /boot/config-$(uname -r) | head -5
+```
 
 #### Install Dependencies
 
@@ -94,7 +101,7 @@ openSUSE Tumbleweed provides rolling updates and supports kernel 6.12+ with sche
 sudo zypper refresh
 
 # Install build tools and compilers
-sudo zypper install -y gcc make cmake meson ninja pkg-config rust cargo
+sudo zypper install -y gcc make cmake meson ninja pkg-config
 
 # Install LLVM/Clang 18+ (minimum required: 17)
 sudo zypper install -y llvm18 clang18 clang18-devel
@@ -119,6 +126,78 @@ do
 done
 ```
 
+### CachyOS (6.17.5-1-cachyos)
+
+#### Verify Kernel Support
+
+```bash
+# Check kernel version (should be 6.12+)
+uname -r
+
+# Check sched_ext support
+zcat /proc/config.gz | grep "CONFIG_SCHED_CLASS_EXT"
+
+# Check BPF support
+zcat /proc/config.gz | grep "CONFIG_BPF" | head -5
+```
+
+Expected output should show:
+```
+CONFIG_SCHED_CLASS_EXT=y
+CONFIG_BPF=y
+CONFIG_BPF_SYSCALL=y
+CONFIG_BPF_JIT=y
+CONFIG_BPF_JIT_ALWAYS_ON=y
+CONFIG_BPF_JIT_DEFAULT_ON=y
+```
+
+#### Install Dependencies
+
+```bash
+# Update system
+sudo pacman -Syu
+
+# Install base development tools
+sudo pacman -S --needed base-devel
+
+# Install LLVM/Clang toolchain (minimum required: 17)
+sudo pacman -S --needed llvm clang
+
+# Install BPF and development libraries
+sudo pacman -S --needed libbpf libelf zstd
+
+# Install build tools
+sudo pacman -S --needed pkgconf meson cmake ninja
+
+# Install additional dependencies
+sudo pacman -S --needed systemtap python python-pip jq libseccomp protobuf
+```
+
+#### Install Static Libraries
+
+CachyOS packages only include dynamic libraries by default. Static libraries are required for Gthulhu's static linking:
+
+**zstd static library:**
+```bash
+cd /tmp
+wget https://github.com/facebook/zstd/releases/download/v1.5.7/zstd-1.5.7.tar.gz
+tar xf zstd-1.5.7.tar.gz
+cd zstd-1.5.7
+make lib-release
+sudo cp lib/libzstd.a /usr/lib/
+```
+
+**zlib static library:**
+```bash
+cd /tmp
+wget https://zlib.net/zlib-1.3.1.tar.gz
+tar xf zlib-1.3.1.tar.gz
+cd zlib-1.3.1
+./configure --static
+make
+sudo cp libz.a /usr/lib/
+```
+
 ## Install Go
 
 Before building Gthulhu, install Golang (required version: 1.22+):
@@ -137,6 +216,13 @@ export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
 ```
 
 After adding, run `source ~/.profile` to apply the changes.
+
+## Install Rust
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source $HOME/.cargo/env
+```
 
 ## Build Gthulhu
 

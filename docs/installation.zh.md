@@ -25,7 +25,15 @@
 | make | - | 建置工具 |
 | git | - | 版本控制 |
 
-#### 檢查核心支援
+## 針對不同發行版的安裝方式
+
+請根據您的 Linux 發行版選擇以下詳細安裝說明。
+
+### Ubuntu 25.04
+
+為了節省各位的時間，我們直接跳過編譯 kernel 與安裝 kernel 的過程，使用[直接支援 sched_ext 的 Ubuntu 25.04](https://canonical.com/blog/canonical-releases-ubuntu-25-04-plucky-puffin)。
+
+#### 驗證核心支援
 
 ```bash
 # 檢查核心版本
@@ -38,14 +46,6 @@ cat /proc/config.gz | gunzip | grep "CONFIG_SCHED_CLASS_EXT"
 # 檢查 BPF 支援
 grep -r "CONFIG_BPF" /boot/config-$(uname -r) | head -5
 ```
-
-## 針對不同發行版的安裝方式
-
-請根據您的 Linux 發行版選擇以下詳細安裝說明。
-
-### Ubuntu 25.04
-
-為了節省各位的時間，我們直接跳過編譯 kernel 與安裝 kernel 的過程，使用[直接支援 sched_ext 的 Ubuntu 25.04](https://canonical.com/blog/canonical-releases-ubuntu-25-04-plucky-puffin)。
 
 #### 安裝相依套件
 
@@ -75,16 +75,23 @@ do
 done
 ```
 
-#### 安裝 Rust
-
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source $HOME/.cargo/env
-```
-
 ### openSUSE Tumbleweed
 
 openSUSE Tumbleweed 提供滾動更新，並支援 kernel 6.12+ 及 sched_ext。
+
+#### 驗證核心支援
+
+```bash
+# 檢查核心版本
+uname -r
+
+# 檢查 sched_ext 支援
+grep -r "CONFIG_SCHED_CLASS_EXT" /boot/config-$(uname -r) || \
+cat /proc/config.gz | gunzip | grep "CONFIG_SCHED_CLASS_EXT"
+
+# 檢查 BPF 支援
+grep -r "CONFIG_BPF" /boot/config-$(uname -r) | head -5
+```
 
 #### 安裝相依套件
 
@@ -93,7 +100,7 @@ openSUSE Tumbleweed 提供滾動更新，並支援 kernel 6.12+ 及 sched_ext。
 sudo zypper refresh
 
 # 安裝建置工具與編譯器
-sudo zypper install -y gcc make cmake meson ninja pkg-config rust cargo
+sudo zypper install -y gcc make cmake meson ninja pkg-config
 
 # 安裝 LLVM/Clang 18+（最低需求：17）
 sudo zypper install -y llvm18 clang18 clang18-devel
@@ -118,6 +125,78 @@ do
 done
 ```
 
+### CachyOS (kernel 6.17.5-1-cachyos)
+
+#### 驗證核心支援
+
+```bash
+# 檢查核心版本（應為 6.12+）
+uname -r
+
+# 檢查 sched_ext 支援
+zcat /proc/config.gz | grep "CONFIG_SCHED_CLASS_EXT"
+
+# 檢查 BPF 支援
+zcat /proc/config.gz | grep "CONFIG_BPF" | head -5
+```
+
+預期輸出應顯示：
+```
+CONFIG_SCHED_CLASS_EXT=y
+CONFIG_BPF=y
+CONFIG_BPF_SYSCALL=y
+CONFIG_BPF_JIT=y
+CONFIG_BPF_JIT_ALWAYS_ON=y
+CONFIG_BPF_JIT_DEFAULT_ON=y
+```
+
+#### 安裝相依套件
+
+```bash
+# 更新系統
+sudo pacman -Syu
+
+# 安裝基礎開發工具
+sudo pacman -S --needed base-devel
+
+# 安裝 LLVM/Clang 工具鏈（最低需求：17）
+sudo pacman -S --needed llvm clang
+
+# 安裝 BPF 與開發函式庫
+sudo pacman -S --needed libbpf libelf zstd
+
+# 安裝建置工具
+sudo pacman -S --needed pkgconf meson cmake ninja
+
+# 安裝額外相依套件
+sudo pacman -S --needed systemtap python python-pip jq libseccomp protobuf
+```
+
+#### 安裝靜態函式庫
+
+CachyOS 套件預設僅包含動態函式庫。Gthulhu 的靜態連結需要靜態函式庫：
+
+**zstd 靜態函式庫：**
+```bash
+cd /tmp
+wget https://github.com/facebook/zstd/releases/download/v1.5.7/zstd-1.5.7.tar.gz
+tar xf zstd-1.5.7.tar.gz
+cd zstd-1.5.7
+make lib-release
+sudo cp lib/libzstd.a /usr/lib/
+```
+
+**zlib 靜態函式庫：**
+```bash
+cd /tmp
+wget https://zlib.net/zlib-1.3.1.tar.gz
+tar xf zlib-1.3.1.tar.gz
+cd zlib-1.3.1
+./configure --static
+make
+sudo cp libz.a /usr/lib/
+```
+
 ## 安裝 Go
 
 在編譯 Gthulhu 之前，請先安裝 Golang（需求版本：1.22+）：
@@ -136,6 +215,13 @@ export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
 ```
 ​
 新增後，記得使用 `source ~/.profile` 讓變更的內容生效。
+
+## 安裝 Rust
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source $HOME/.cargo/env
+```
 
 ## 編譯 Gthulhu
 
