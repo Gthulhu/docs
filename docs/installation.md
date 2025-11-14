@@ -63,7 +63,6 @@ sudo apt-get install --yes systemtap-sdt-dev
 sudo apt-get install --yes python3 python3-pip ninja-build
 sudo apt-get install --yes libseccomp-dev protobuf-compiler
 sudo apt-get install --yes meson cmake
-sudo apt-get install --yes cargo
 ```
 
 #### Configure Clang
@@ -243,8 +242,7 @@ git submodule update
 
 # Build sched_ext framework
 cd scx
-meson setup build --prefix ~
-meson compile -C build
+cargo build --release -p scx_rustland
 cd ..
 
 # Build libbpfgo
@@ -264,19 +262,7 @@ You can observe Gthulhu’s output to see how many tasks are currently being sch
 
 ## Troubleshooting
 
-### Issue 1: `undefined reference to eu_search_tree_init`
-
-If you encounter this, it’s because the system is using the elfutils version of libelf. You can download and compile libelf yourself to resolve it:
-```sh
-sudo apt remove --purge elfutils libelf-dev
-cd ~
-git clone https://github.com/arachsys/libelf.git
-cd libelf
-make
-sudo make install
-```
-
-### Issue 2: `ERROR: Program 'clang' not found or not executable`
+### Issue 1: `ERROR: Program 'clang' not found or not executable`
 
 If you see this when running meson setup build --prefix ~, try:
 ```sh
