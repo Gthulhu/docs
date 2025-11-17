@@ -62,7 +62,6 @@ sudo apt-get install --yes systemtap-sdt-dev
 sudo apt-get install --yes python3 python3-pip ninja-build
 sudo apt-get install --yes libseccomp-dev protobuf-compiler
 sudo apt-get install --yes meson cmake
-sudo apt-get install --yes cargo
 ```
 
 #### 設定 Clang
@@ -235,8 +234,7 @@ git submodule init
 git submodule sync
 git submodule update
 cd scx
-meson setup build --prefix ~
-meson compile -C build
+cargo build --release -p scx_rustland
 cd ..
 cd libbpfgo
 make
@@ -251,20 +249,8 @@ make
 我們可以觀察 Gthulhu 的輸出得知目前已有多少任務是透過 Gthulhu 進行調度的。
 
 ## 常見問題排解
-
-### 問題一：`undefined reference to eu_search_tree_init`
 ​
-如果你遇到了類似的問題，是因為目前系統使用的是 elfutils 版的 libelf，你可以自行下載與編譯 libelf 來解決這個問題：
-```sh
-sudo apt remove --purge elfutils libelf-dev
-cd ~
-git clone https://github.com/arachsys/libelf.git
-cd libelf
-make
-sudo make install
-```
-​
-### 問題二：`ERROR: Program 'clang' not found or not executable`
+### 問題一：`ERROR: Program 'clang' not found or not executable`
 ​
 如果你在執行 `meson setup build --prefix ~` 命令時遇到該問題，可以嘗試以下命令：
 ```sh
