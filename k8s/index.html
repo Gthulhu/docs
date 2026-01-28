@@ -1,0 +1,889 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Cloud-native workload optimization scheduler based on Linux Scheduler Extension">
+      
+      
+      
+        <link rel="canonical" href="https://gthulhu.org/k8s/">
+      
+      
+        <link rel="prev" href="../installation/">
+      
+      
+        <link rel="next" href="../how-it-works/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.17">
+    
+    
+      
+        <title>K8s Deployment - Gthulhu</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.bcfcd587.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+  
+
+
+  
+  
+
+<script id="__analytics">function __md_analytics(){function n(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],n("js",new Date),n("config","G-T0RWMB3KJM"),document.addEventListener("DOMContentLoaded",function(){document.forms.search&&document.forms.search.query.addEventListener("blur",function(){this.value&&n("event","search",{search_term:this.value})}),document$.subscribe(function(){var a=document.forms.feedback;if(void 0!==a)for(var e of a.querySelectorAll("[type=submit]"))e.addEventListener("click",function(e){e.preventDefault();var t=document.location.pathname,e=this.getAttribute("data-md-value");n("event","feedback",{page:t,data:e}),a.firstElementChild.disabled=!0;e=a.querySelector(".md-feedback__note [data-md-value='"+e+"']");e&&(e.hidden=!1)}),a.hidden=!1}),location$.subscribe(function(e){n("config","G-T0RWMB3KJM",{page_path:e.pathname})})});var e=document.createElement("script");e.async=!0,e.src="https://www.googletagmanager.com/gtag/js?id=G-T0RWMB3KJM",document.getElementById("__analytics").insertAdjacentElement("afterEnd",e)}</script>
+  
+    <script>"undefined"!=typeof __md_analytics&&__md_analytics()</script>
+  
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#deploying-gthulhu-with-kubernetes" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Gthulhu" class="md-header__button md-logo" aria-label="Gthulhu" data-md-component="logo">
+      
+  <img src="https://raw.githubusercontent.com/Gthulhu/Gthulhu/main/assets/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Gthulhu
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              K8s Deployment
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5c-.84 0-1.65.15-2.39.42L12 2M3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29L3.34 7m.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14L3.36 17M20.65 7l-1.77 3.79a7.023 7.023 0 0 0-2.38-4.15l4.15.36m-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29L20.64 17M12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44L12 22Z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3 3.19.09m3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95 2.06.05m-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31Z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+      <div class="md-header__option">
+  <div class="md-select">
+    
+    <button class="md-header__button md-icon" aria-label="Select language">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m12.87 15.07-2.54-2.51.03-.03A17.52 17.52 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04M18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12m-2.62 7 1.62-4.33L19.12 17h-3.24Z"/></svg>
+    </button>
+    <div class="md-select__inner">
+      <ul class="md-select__list">
+        
+          <li class="md-select__item">
+            <a href="./" hreflang="en" class="md-select__link">
+              English
+            </a>
+          </li>
+        
+          <li class="md-select__item">
+            <a href="../zh/k8s/" hreflang="zh" class="md-select__link">
+              中文
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</div>
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Gthulhu/Gthulhu" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../installation/" class="md-tabs__link">
+          
+  
+  Get Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../contributing/" class="md-tabs__link">
+        
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Gthulhu" class="md-nav__button md-logo" aria-label="Gthulhu" data-md-component="logo">
+      
+  <img src="https://raw.githubusercontent.com/Gthulhu/Gthulhu/main/assets/logo.png" alt="logo">
+
+    </a>
+    Gthulhu
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Gthulhu/Gthulhu" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Get Started
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Get Started
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    K8s Deployment
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    K8s Deployment
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prerequisites
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building-gthulhu-docker-images" class="md-nav__link">
+    <span class="md-ellipsis">
+      Building Gthulhu Docker Images
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deploying-gthulhu-to-kubernetes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deploying Gthulhu to Kubernetes
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-it-works/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    How It Works
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../project-goals/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Project Goals
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development-history/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Development History
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-reference/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    API Reference
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mentioned/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Mentioned
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Contributing
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prerequisites
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building-gthulhu-docker-images" class="md-nav__link">
+    <span class="md-ellipsis">
+      Building Gthulhu Docker Images
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deploying-gthulhu-to-kubernetes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deploying Gthulhu to Kubernetes
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="deploying-gthulhu-with-kubernetes">Deploying Gthulhu with Kubernetes</h1>
+<p>This document explains how to deploy the Gthulhu scheduler and API server in a Kubernetes environment.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<ul>
+<li>Complete the installation and setup of Microk8s, and ensure <code>kubectl</code> works properly.</li>
+<li>Enable Microk8s' built-in container registry. For details, see: <a href="https://microk8s.io/docs/registry-built-in">How to use the built-in registry</a>.</li>
+<li>Enable Microk8s RBAC functionality using <code>microk8s enable rbac</code></li>
+</ul>
+<h2 id="building-gthulhu-docker-images">Building Gthulhu Docker Images</h2>
+<p>First, obtain the Gthulhu project source code:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>--recursive<span class="w"> </span>https://github.com/Gthulhu/Gthulhu.git
+</code></pre></div></p>
+<p>Next, refer to the <a href="https://gthulhu.github.io/docs/installation.en/">Gthulhu Installation Guide</a> to complete the Gthulhu compilation.
+After completion, use the following commands to build and push Docker images to the local Microk8s registry:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>$<span class="w"> </span>make<span class="w"> </span>image
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>api
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>$<span class="w"> </span>make<span class="w"> </span>image
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>..
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>$<span class="w"> </span>docker<span class="w"> </span>push<span class="w"> </span><span class="m">127</span>.0.0.1:32000/gthulhu-api:latest
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>$<span class="w"> </span>docker<span class="w"> </span>push<span class="w"> </span><span class="m">127</span>.0.0.1:32000/gthulhu:latest
+</code></pre></div>
+<h2 id="deploying-gthulhu-to-kubernetes">Deploying Gthulhu to Kubernetes</h2>
+<p>Next, use the following commands to deploy Gthulhu to the Kubernetes cluster:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>chart
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>$<span class="w"> </span>helm<span class="w"> </span>install<span class="w"> </span>gthulhu<span class="w"> </span>gthulhu
+</code></pre></div>
+<p>To use the official Gthulhu Docker images instead of the locally built ones, run:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>helm<span class="w"> </span>install<span class="w"> </span>gthulhu<span class="w"> </span>gthulhu<span class="w"> </span>-f<span class="w"> </span>./gthulhu/values-production.yaml
+</code></pre></div>
+<p>If no errors occur, you should be able to see that the Gthulhu pods have started successfully:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>$<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>gthulhu
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>gthulhu-manager-776784fcd9-sv79b<span class="w">                            </span><span class="m">2</span>/2<span class="w">     </span>Running<span class="w">   </span><span class="m">2</span><span class="w"> </span><span class="o">(</span>32m<span class="w"> </span>ago<span class="o">)</span><span class="w">      </span>33m
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>gthulhu-mongodb-0<span class="w">                                           </span><span class="m">2</span>/2<span class="w">     </span>Running<span class="w">   </span><span class="m">0</span><span class="w">                </span>33m
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>gthulhu-scheduler-bb2qv<span class="w">                                     </span><span class="m">3</span>/3<span class="w">     </span>Running<span class="w">   </span><span class="m">1</span><span class="w"> </span><span class="o">(</span>32m<span class="w"> </span>ago<span class="o">)</span><span class="w">      </span>33m
+</code></pre></div>
+<p>Check the scheduler logs to confirm it's working properly:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>$<span class="w"> </span>kubectl<span class="w"> </span>logs<span class="w"> </span>gthulhu-scheduler-bb2qv
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="nv">time</span><span class="o">=</span><span class="m">2026</span>-01-28T04:16:13.992Z<span class="w"> </span><span class="nv">level</span><span class="o">=</span>INFO<span class="w"> </span><span class="nv">msg</span><span class="o">=</span><span class="s2">&quot;Scheduler configuration&quot;</span><span class="w"> </span><span class="nv">SliceNsDefault</span><span class="o">=</span><span class="m">5000000</span><span class="w"> </span><span class="nv">SliceNsMin</span><span class="o">=</span><span class="m">500000</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="nv">time</span><span class="o">=</span><span class="m">2026</span>-01-28T04:16:13.994Z<span class="w"> </span><span class="nv">level</span><span class="o">=</span>INFO<span class="w"> </span><span class="nv">msg</span><span class="o">=</span><span class="s2">&quot;Debug mode enabled&quot;</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="nv">time</span><span class="o">=</span><span class="m">2026</span>-01-28T04:16:13.994Z<span class="w"> </span><span class="nv">level</span><span class="o">=</span>INFO<span class="w"> </span><span class="nv">msg</span><span class="o">=</span><span class="s2">&quot;Early processing disabled&quot;</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="nv">time</span><span class="o">=</span><span class="m">2026</span>-01-28T04:16:14.040Z<span class="w"> </span><span class="nv">level</span><span class="o">=</span>INFO<span class="w"> </span><span class="nv">msg</span><span class="o">=</span><span class="s2">&quot;Failed to fetch initial scheduling strategies: failed to obtain JWT token: failed to send token request: Post \&quot;http://localhost:8080/api/v1/auth/token\&quot;: dial tcp [::1]:8080: connect: connection refused&quot;</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>libbpf:<span class="w"> </span>struct_ops<span class="w"> </span>goland:<span class="w"> </span>member<span class="w"> </span>cgroup_set_bandwidth<span class="w"> </span>not<span class="w"> </span>found<span class="w"> </span><span class="k">in</span><span class="w"> </span>kernel,<span class="w"> </span>skipping<span class="w"> </span>it<span class="w"> </span>as<span class="w"> </span>it<span class="s1">&#39;s set to zero</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="s1">libbpf: struct_ops goland: member priv not found in kernel, skipping it as it&#39;</span>s<span class="w"> </span><span class="nb">set</span><span class="w"> </span>to<span class="w"> </span>zero
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>map:<span class="w"> </span>cpu_ctx_stor,<span class="w"> </span>type:<span class="w"> </span>BPF_MAP_TYPE_PERCPU_ARRAY,<span class="w"> </span>fd:<span class="w"> </span><span class="m">6</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>map:<span class="w"> </span>task_ctx_stor,<span class="w"> </span>type:<span class="w"> </span>BPF_MAP_TYPE_TASK_STORAGE,<span class="w"> </span>fd:<span class="w"> </span><span class="m">7</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>map:<span class="w"> </span>queued,<span class="w"> </span>type:<span class="w"> </span>BPF_MAP_TYPE_RINGBUF,<span class="w"> </span>fd:<span class="w"> </span><span class="m">8</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>map:<span class="w"> </span>dispatched,<span class="w"> </span>type:<span class="w"> </span>BPF_MAP_TYPE_USER_RINGBUF,<span class="w"> </span>fd:<span class="w"> </span><span class="m">9</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>map:<span class="w"> </span>priority_tasks,<span class="w"> </span>type:<span class="w"> </span>BPF_MAP_TYPE_HASH,<span class="w"> </span>fd:<span class="w"> </span><span class="m">10</span>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>map:<span class="w"> </span>running_task,<span class="w"> </span>type:<span class="w"> </span>BPF_MAP_TYPE_HASH,<span class="w"> </span>fd:<span class="w"> </span><span class="m">11</span>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>map:<span class="w"> </span>usersched_timer,<span class="w"> </span>type:<span class="w"> </span>BPF_MAP_TYPE_ARRAY,<span class="w"> </span>fd:<span class="w"> </span><span class="m">12</span>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>map:<span class="w"> </span>main_bpf.rodata,<span class="w"> </span>type:<span class="w"> </span>BPF_MAP_TYPE_ARRAY,<span class="w"> </span>fd:<span class="w"> </span><span class="m">13</span>
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>map:<span class="w"> </span>main_bpf.bss,<span class="w"> </span>type:<span class="w"> </span>BPF_MAP_TYPE_ARRAY,<span class="w"> </span>fd:<span class="w"> </span><span class="m">14</span>
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>map:<span class="w"> </span>.data.uei_dump,<span class="w"> </span>type:<span class="w"> </span>BPF_MAP_TYPE_ARRAY,<span class="w"> </span>fd:<span class="w"> </span><span class="m">15</span>
+<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>map:<span class="w"> </span>main_bpf.data,<span class="w"> </span>type:<span class="w"> </span>BPF_MAP_TYPE_ARRAY,<span class="w"> </span>fd:<span class="w"> </span><span class="m">16</span>
+<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>map:<span class="w"> </span>goland,<span class="w"> </span>type:<span class="w"> </span>BPF_MAP_TYPE_STRUCT_OPS,<span class="w"> </span>fd:<span class="w"> </span><span class="m">17</span>
+<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a><span class="nv">time</span><span class="o">=</span><span class="m">2026</span>-01-28T04:16:14.460Z<span class="w"> </span><span class="nv">level</span><span class="o">=</span>INFO<span class="w"> </span><span class="nv">msg</span><span class="o">=</span>Topology<span class="w"> </span><span class="nv">topology</span><span class="o">=</span><span class="s2">&quot;map[L2:map[0-1:[0 1] 2-3:[2 3]] L3:map[0-3:[0 1 2 3]]]&quot;</span>
+<a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a><span class="nv">time</span><span class="o">=</span><span class="m">2026</span>-01-28T04:16:14.491Z<span class="w"> </span><span class="nv">level</span><span class="o">=</span>INFO<span class="w"> </span><span class="nv">msg</span><span class="o">=</span><span class="s2">&quot;UserSched&#39;s Pid&quot;</span><span class="w"> </span><span class="nv">pid</span><span class="o">=</span><span class="m">413219</span>
+<a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a><span class="nv">time</span><span class="o">=</span><span class="m">2026</span>-01-28T04:16:14.495Z<span class="w"> </span><span class="nv">level</span><span class="o">=</span>INFO<span class="w"> </span><span class="nv">msg</span><span class="o">=</span><span class="s2">&quot;scheduler started&quot;</span>
+<a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a><span class="nv">time</span><span class="o">=</span><span class="m">2026</span>-01-28T04:16:14.495Z<span class="w"> </span><span class="nv">level</span><span class="o">=</span>INFO<span class="w"> </span><span class="nv">msg</span><span class="o">=</span><span class="s2">&quot;scheduler loop started&quot;</span>
+<a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a><span class="nv">time</span><span class="o">=</span><span class="m">2026</span>-01-28T04:16:19.011Z<span class="w"> </span><span class="nv">level</span><span class="o">=</span>INFO<span class="w"> </span><span class="nv">msg</span><span class="o">=</span><span class="s2">&quot;Scheduling strategies updated: 0 strategies&quot;</span>
+<a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a><span class="nv">time</span><span class="o">=</span><span class="m">2026</span>-01-28T04:16:19.498Z<span class="w"> </span><span class="nv">level</span><span class="o">=</span>INFO<span class="w"> </span><span class="nv">msg</span><span class="o">=</span><span class="s2">&quot;bss data&quot;</span><span class="w"> </span><span class="nv">data</span><span class="o">=</span><span class="s2">&quot;{\&quot;nr_running\&quot;:52796,\&quot;nr_queued\&quot;:1,\&quot;nr_scheduled\&quot;:0,\&quot;nr_online_cpus\&quot;:4,\&quot;usersched_last_run_at\&quot;:4050881978519621,\&quot;nr_user_dispatches\&quot;:15001,\&quot;nr_kernel_dispatches\&quot;:0,\&quot;nr_cancel_dispatches\&quot;:0,\&quot;nr_bounce_dispatches\&quot;:0,\&quot;nr_failed_dispatches\&quot;:0,\&quot;nr_sched_congested\&quot;:0}&quot;</span>
+<a id="__codelineno-5-26" name="__codelineno-5-26" href="#__codelineno-5-26"></a><span class="nv">time</span><span class="o">=</span><span class="m">2026</span>-01-28T04:16:19.504Z<span class="w"> </span><span class="nv">level</span><span class="o">=</span>INFO<span class="w"> </span><span class="nv">msg</span><span class="o">=</span><span class="s2">&quot;Successfully sent metrics to API server&quot;</span>
+<a id="__codelineno-5-27" name="__codelineno-5-27" href="#__codelineno-5-27"></a><span class="nv">time</span><span class="o">=</span><span class="m">2026</span>-01-28T04:16:23.996Z<span class="w"> </span><span class="nv">level</span><span class="o">=</span>INFO<span class="w"> </span><span class="nv">msg</span><span class="o">=</span><span class="s2">&quot;Scheduling strategies updated: 0 strategies&quot;</span>
+<a id="__codelineno-5-28" name="__codelineno-5-28" href="#__codelineno-5-28"></a><span class="nv">time</span><span class="o">=</span><span class="m">2026</span>-01-28T04:16:24.495Z<span class="w"> </span><span class="nv">level</span><span class="o">=</span>INFO<span class="w"> </span><span class="nv">msg</span><span class="o">=</span><span class="s2">&quot;bss data&quot;</span><span class="w"> </span><span class="nv">data</span><span class="o">=</span><span class="s2">&quot;{\&quot;nr_running\&quot;:112288,\&quot;nr_queued\&quot;:1,\&quot;nr_scheduled\&quot;:0,\&quot;nr_online_cpus\&quot;:4,\&quot;usersched_last_run_at\&quot;:4050881978519621,\&quot;nr_user_dispatches\&quot;:31369,\&quot;nr_kernel_dispatches\&quot;:5,\&quot;nr_cancel_dispatches\&quot;:0,\&quot;nr_bounce_dispatches\&quot;:0,\&quot;nr_failed_dispatches\&quot;:0,\&quot;nr_sched_congested\&quot;:0}&quot;</span>
+<a id="__codelineno-5-29" name="__codelineno-5-29" href="#__codelineno-5-29"></a><span class="nv">time</span><span class="o">=</span><span class="m">2026</span>-01-28T04:16:28.994Z<span class="w"> </span><span class="nv">level</span><span class="o">=</span>INFO<span class="w"> </span><span class="nv">msg</span><span class="o">=</span><span class="s2">&quot;Scheduling strategies updated: 0 strategies&quot;</span>
+<a id="__codelineno-5-30" name="__codelineno-5-30" href="#__codelineno-5-30"></a><span class="nv">time</span><span class="o">=</span><span class="m">2026</span>-01-28T04:16:29.495Z<span class="w"> </span><span class="nv">level</span><span class="o">=</span>INFO<span class="w"> </span><span class="nv">msg</span><span class="o">=</span><span class="s2">&quot;bss data&quot;</span><span class="w"> </span><span class="nv">data</span><span class="o">=</span><span class="s2">&quot;{\&quot;nr_running\&quot;:169593,\&quot;nr_queued\&quot;:3,\&quot;nr_scheduled\&quot;:0,\&quot;nr_online_cpus\&quot;:4,\&quot;usersched_last_run_at\&quot;:4050881978519621,\&quot;nr_user_dispatches\&quot;:46949,\&quot;nr_kernel_dispatches\&quot;:5,\&quot;nr_cancel_dispatches\&quot;:0,\&quot;nr_bounce_dispatches\&quot;:0,\&quot;nr_failed_dispatches\&quot;:0,\&quot;nr_sched_congested\&quot;:0}&quot;</span>
+<a id="__codelineno-5-31" name="__codelineno-5-31" href="#__codelineno-5-31"></a><span class="nv">time</span><span class="o">=</span><span class="m">2026</span>-01-28T04:16:29.498Z<span class="w"> </span><span class="nv">level</span><span class="o">=</span>INFO<span class="w"> </span><span class="nv">msg</span><span class="o">=</span><span class="s2">&quot;Successfully sent metrics to API server&quot;</span>
+<a id="__codelineno-5-32" name="__codelineno-5-32" href="#__codelineno-5-32"></a><span class="nv">time</span><span class="o">=</span><span class="m">2026</span>-01-28T04:16:33.995Z<span class="w"> </span><span class="nv">level</span><span class="o">=</span>INFO<span class="w"> </span><span class="nv">msg</span><span class="o">=</span><span class="s2">&quot;Scheduling strategies updated: 0 strategies&quot;</span>
+<a id="__codelineno-5-33" name="__codelineno-5-33" href="#__codelineno-5-33"></a><span class="nv">time</span><span class="o">=</span><span class="m">2026</span>-01-28T04:16:34.495Z<span class="w"> </span><span class="nv">level</span><span class="o">=</span>INFO<span class="w"> </span><span class="nv">msg</span><span class="o">=</span><span class="s2">&quot;bss data&quot;</span><span class="w"> </span><span class="nv">data</span><span class="o">=</span><span class="s2">&quot;{\&quot;nr_running\&quot;:227568,\&quot;nr_queued\&quot;:1,\&quot;nr_scheduled\&quot;:0,\&quot;nr_online_cpus\&quot;:4,\&quot;usersched_last_run_at\&quot;:4050881978519621,\&quot;nr_user_dispatches\&quot;:63273,\&quot;nr_kernel_dispatches\&quot;:7,\&quot;nr_cancel_dispatches\&quot;:0,\&quot;nr_bounce_dispatches\&quot;:0,\&quot;nr_failed_dispatches\&quot;:0,\&quot;nr_sched_congested\&quot;:0}&quot;</span>
+</code></pre></div>
+<p>If you can see logs similar to the above, it means Gthulhu is successfully running in the Kubernetes cluster.</p>
+<div class="admonition info">
+<p class="admonition-title">Learn More</p>
+<p>The Helm chart provided by Gthulhu uses DaemonSet as the pod generator to ensure that each node runs a Gthulhu scheduler service.</p>
+</div>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "search.highlight", "search.share", "content.code.copy", "content.code.annotate"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.1e8ae164.min.js"></script>
+      
+    
+  </body>
+</html>

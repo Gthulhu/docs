@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+    <url>
+        <loc>https://gthulhu.org/</loc>
+        <lastmod>2026-01-28</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://gthulhu.org/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://gthulhu.org/zh/"/>
+    </url>
+    <url>
+        <loc>https://gthulhu.org/api-reference/</loc>
+        <lastmod>2026-01-28</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://gthulhu.org/api-reference/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://gthulhu.org/zh/api-reference/"/>
+    </url>
+    <url>
+        <loc>https://gthulhu.org/contributing/</loc>
+        <lastmod>2026-01-28</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://gthulhu.org/contributing/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://gthulhu.org/zh/contributing/"/>
+    </url>
+    <url>
+        <loc>https://gthulhu.org/development-history/</loc>
+        <lastmod>2026-01-28</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://gthulhu.org/development-history/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://gthulhu.org/zh/development-history/"/>
+    </url>
+    <url>
+        <loc>https://gthulhu.org/faq/</loc>
+        <lastmod>2026-01-28</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://gthulhu.org/faq/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://gthulhu.org/zh/faq/"/>
+    </url>
+    <url>
+        <loc>https://gthulhu.org/how-it-works/</loc>
+        <lastmod>2026-01-28</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://gthulhu.org/how-it-works/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://gthulhu.org/zh/how-it-works/"/>
+    </url>
+    <url>
+        <loc>https://gthulhu.org/installation/</loc>
+        <lastmod>2026-01-28</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://gthulhu.org/installation/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://gthulhu.org/zh/installation/"/>
+    </url>
+    <url>
+        <loc>https://gthulhu.org/k8s/</loc>
+        <lastmod>2026-01-28</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://gthulhu.org/k8s/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://gthulhu.org/zh/k8s/"/>
+    </url>
+    <url>
+        <loc>https://gthulhu.org/mentioned/</loc>
+        <lastmod>2026-01-28</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://gthulhu.org/mentioned/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://gthulhu.org/zh/mentioned/"/>
+    </url>
+    <url>
+        <loc>https://gthulhu.org/project-goals/</loc>
+        <lastmod>2026-01-28</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://gthulhu.org/project-goals/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://gthulhu.org/zh/project-goals/"/>
+    </url>
+    <url>
+        <loc>https://gthulhu.org/zh/</loc>
+        <lastmod>2026-01-28</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://gthulhu.org/zh/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://gthulhu.org/"/>
+    </url>
+    <url>
+        <loc>https://gthulhu.org/zh/api-reference/</loc>
+        <lastmod>2026-01-28</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://gthulhu.org/zh/api-reference/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://gthulhu.org/api-reference/"/>
+    </url>
+    <url>
+        <loc>https://gthulhu.org/zh/contributing/</loc>
+        <lastmod>2026-01-28</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://gthulhu.org/zh/contributing/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://gthulhu.org/contributing/"/>
+    </url>
+    <url>
+        <loc>https://gthulhu.org/zh/development-history/</loc>
+        <lastmod>2026-01-28</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://gthulhu.org/zh/development-history/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://gthulhu.org/development-history/"/>
+    </url>
+    <url>
+        <loc>https://gthulhu.org/zh/faq/</loc>
+        <lastmod>2026-01-28</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://gthulhu.org/zh/faq/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://gthulhu.org/faq/"/>
+    </url>
+    <url>
+        <loc>https://gthulhu.org/zh/how-it-works/</loc>
+        <lastmod>2026-01-28</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://gthulhu.org/zh/how-it-works/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://gthulhu.org/how-it-works/"/>
+    </url>
+    <url>
+        <loc>https://gthulhu.org/zh/installation/</loc>
+        <lastmod>2026-01-28</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://gthulhu.org/zh/installation/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://gthulhu.org/installation/"/>
+    </url>
+    <url>
+        <loc>https://gthulhu.org/zh/k8s/</loc>
+        <lastmod>2026-01-28</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://gthulhu.org/zh/k8s/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://gthulhu.org/k8s/"/>
+    </url>
+    <url>
+        <loc>https://gthulhu.org/zh/mentioned/</loc>
+        <lastmod>2026-01-28</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://gthulhu.org/zh/mentioned/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://gthulhu.org/mentioned/"/>
+    </url>
+    <url>
+        <loc>https://gthulhu.org/zh/project-goals/</loc>
+        <lastmod>2026-01-28</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://gthulhu.org/zh/project-goals/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://gthulhu.org/project-goals/"/>
+    </url>
+</urlset>
