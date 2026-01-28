@@ -1,7 +1,8 @@
 <a href="https://landscape.cncf.io/?item=provisioning--automation-configuration--gthulhu" target="_blank"><img src="https://img.shields.io/badge/CNCF%20Landscape-5699C6?style=for-the-badge&logo=cncf&label=cncf" alt="cncf landscape" /></a>
 
+[![LFX Health Score](https://insights.linuxfoundation.org/api/badge/health-score?project=gthulhu)](https://insights.linuxfoundation.org/project/gthulhu)
 
-Welcome to the official documentation for **Gthulhu** and **Qumun** - advanced Linux schedulers designed to optimize cloud-native workloads using the Linux Scheduler Extension (sched_ext) framework.
+Welcome to the official website of Gthulhu. This site provides detailed information about Gthulhu, an advanced Linux scheduler designed to optimize cloud-native workloads based on the Linux Scheduler Extension (sched_ext) framework.
 
 ## 📰 Latest News
 
@@ -11,26 +12,90 @@ Welcome to the official documentation for **Gthulhu** and **Qumun** - advanced L
 !!! success "Gthulhu joins eBPF Application Landscape"
     Gthulhu has been added to the [eBPF Application Landscape](https://ebpf.io/applications/), recognized as an innovative eBPF-based scheduling solution.
 
-
-
 ## Overview
-Gthulhu is a next-generation scheduler designed for the cloud-native ecosystem, built with Golang and powered by the qumun framework.
 
-The name Gthulhu is inspired by Cthulhu, a mythical creature known for its many tentacles. Just as tentacles can grasp and steer, Gthulhu symbolizes the ability to take the helm and navigate the complex world of modern distributed systems — much like how Kubernetes uses a ship’s wheel as its emblem.
+Gthulhu aims to provide an orchestrable distributed scheduler solution for the cloud-native ecosystem, meeting the dynamic and diverse requirements of cloud-native applications, such as:
 
-The prefix “G” comes from Golang, the language at the core of this project, highlighting both its technical foundation and its developer-friendly design.
+- Trading systems that require low-latency processing capabilities
+- Big data analytics that need high-throughput computing resources
+- Machine learning tasks that require flexible resource allocation
 
-Underneath, Gthulhu runs on the qumun framework (qumun means “heart” in the Bunun language, an Indigenous people of Taiwan), reflecting the role of a scheduler as the beating heart of the operating system. This not only emphasizes its central importance in orchestrating workloads but also shares a piece of Taiwan’s Indigenous culture with the global open-source community.
+The default Linux kernel scheduler emphasizes fairness and cannot be optimized for the specific needs of different applications. Furthermore, when these applications run in distributed architectures, traditional schedulers often fail to effectively coordinate and allocate resources, leading to performance bottlenecks and resource waste.
 
-## Inspiration
-The project is inspired by the Andrea Righi's talk "Crafting a Linux kernel scheduler in Rust". So I spent sometime to re-implement the scx_rustland, which is called qumun (scx_goland). After I done all of infrastructure setup, I redefine the project's mission, I make Gthulhu to be a generic scheduling solution dedicated to cloud-native workloads.
+### Architecture Overview
 
-## What it does
-Gthulhu simplfies the transformation from user's intents to scheduling policies. User can use machine friendly language (e.g. json) or use AI agent with MCP to communicate with Gthulhu, then Gthulhu will optimize specific workloads based on what you gave!
+To enable users to easily transform their intents into scheduling policies, Gthulhu provides an intuitive interface that allows users to communicate using machine-readable languages (such as JSON) or through AI agents with MCP. Behind these interfaces, several key components work together:
+
+#### 1\. Gthulhu API Server (Manager Mode)
+
+The Manager accepts policy requests from users and transforms them into specific scheduling intents.
+
+```bash
+$ curl -X POST http://localhost:8080/api/v1/strategies \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{            
+    "strategyNamespace": "default",
+    "labelSelectors": [
+      {"key": "app.kubernetes.io/name", "value": "prometheus"}
+    ],
+    "k8sNamespace": ["default"],
+    "priority": 10,
+    "executionTime": 20000000
+  }'
+```
+
+The example above demonstrates how to send a scheduling policy request to the Gthulhu API Server using the curl command. Upon receiving the request, the Manager attempts to select Pods from the Kubernetes cluster that match the label selectors and adjusts the scheduling policies for these Pods based on the specified priority and execution time.
+
+#### 2\. Gthulhu API Server (Decision Maker Mode)
+
+The Decision Maker runs as a sidecar alongside the Gthulhu Scheduler on each node in the cluster, identifying target Process(es) based on the scheduling intents sent by the Manager.
+
+#### 3\. Gthulhu Scheduler
+
+Each node in the Kubernetes cluster runs a Gthulhu Scheduler, which is responsible for monitoring system resource usage and periodically obtaining scheduling decisions from the Decision Maker. Based on these decisions, the Gthulhu Scheduler adjusts the CPU time and priority of target Process(es).
+
+The Gthulhu Scheduler can be further divided into two parts:
+
+- **Gthulhu Agent**: Responsible for interacting with the Linux Kernel's sched_ext framework and applying scheduling decisions.
+- **Qumun Framework**: Provides the underlying eBPF code and related tools, ensuring that the Gthulhu Agent can efficiently communicate with the Linux kernel.
+
+The diagram below illustrates the overall architecture of Gthulhu:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              Gthulhu Architecture                               │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│   ┌─────────────┐         ┌─────────────────────┐         ┌─────────────────┐   │
+│   │    User     │ ──────▶ │      Manager        │ ──────▶ │    MongoDB      │   │
+│   │  (Web UI)   │         │ (Central Management)│         │  (Persistence)  │   │
+│   └─────────────┘         └──────────┬──────────┘         └─────────────────┘   │
+│                                      │                                          │
+│                                      │                                          │
+│              ┌───────────────────────┼───────────────────────┐                  │
+│              │                       │                       │                  │
+│              ▼                       ▼                       ▼                  │
+│   ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐           │
+│   │ Gthulhu Agent & │     │ Gthulhu Agent & │     │ Gthulhu Agent & │           │
+│   │ Decision Maker  │     │ Decision Maker  │ ... │ Decision Maker  │           │
+│   │   (Node 1)      │     │   (Node 2)      │     │   (Node N)      │           │
+│   └────────┬────────┘     └────────┬────────┘     └────────┬────────┘           │
+│            │                       │                       │                    │
+│            ▼                       ▼                       ▼                    │
+│   ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐           │
+│   │  sched_ext      │     │  sched_ext      │     │  sched_ext      │           │
+│   │ (eBPF Scheduler)│     │ (eBPF Scheduler)│     │ (eBPF Scheduler)│           │
+│   └─────────────────┘     └─────────────────┘     └─────────────────┘           │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+After understanding the overall architecture of Gthulhu, we can see more clearly how each component works together to achieve efficient cloud-native workload scheduling.
 
 ## DEMO
 
-Click the image below to see our DEMO on YouTube!
+Click the link below to watch our DEMO on YouTube!
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/MfU64idQcHg?si=HAdQLQU1NaoQEbkf" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
@@ -51,55 +116,22 @@ timeline
           Release 1 : ☑️  R1 DEMO (free5GC) : ☑️  R1 DEMO (MCP) : R1 DEMO (Agent Builder)
 ```
 
-## Architecture
+## License
 
-```mermaid
-graph TB
-    A[User Applications] --> B[Linux Kernel]
-    B --> C[sched_ext Framework]
-    C --> D[BPF Scheduler Program]
-    D --> E[User Space Scheduler]
-    E --> F[Go Scheduling Logic]
-    F --> G[Qumun]
-    
-    subgraph "Kernel Space"
-        B
-        C
-        D
-    end
-    
-    subgraph "User Space"
-        E
-        F
-        G
-    end
-```
+This project is licensed under the **Apache License 2.0**.
 
+## Community & Support
 
-## Community
-
-### Get Involved
-
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/Gthulhu/Gthulhu/discussions)
-- 🐛 **Issues**: [GitHub Issues](https://github.com/Gthulhu/Gthulhu/issues)
-- 📧 **Contact**: [Project Maintainers](mailto:maintainers@gthulhu.dev)
-- 📰 **Media Coverage**: Check out [Media Coverage & Mentions](mentioned.md) to see project impact
-
-### Contributing
-
-We welcome contributions! See our [Contributing Guide](contributing.md) to get started.
-
-### License
-
-This software is distributed under the terms of the GNU General Public License version 2.
+- **GitHub**: [Gthulhu](https://github.com/Gthulhu/Gthulhu) | [Qumun](https://github.com/Gthulhu/scx_goland_core)
+- **Issue Reporting**: Please report issues on GitHub Issues
+- **Feature Requests**: Welcome to submit Pull Requests or open Issues for discussion
+- **Media Coverage**: Check out [Media Coverage & Mentions](mentioned.md) to see project impact
 
 ---
 
-!!! tip "Getting Started"
-    New to Gthulhu? Start with our [Installation Guide](installation.md) and learn [How It Works](how-it-works.md).
+## Next Steps
 
-!!! info "Learn More"
-    Explore the [Development History](development-history.md) to understand technical challenges and solutions.
-
-!!! info "Need Help?"
-    Check our [FAQ](faq.md) for common questions or create an issue on GitHub.
+- 📖 Read [How It Works](how-it-works.md) to understand the technical details
+- 🎯 Check out [Project Goals](project-goals.md) to learn about the development direction
+- 📜 Browse [Development History](development-history.md) to understand technical challenges and solutions
+- 🛠️ Refer to [API Documentation](api-reference.md) for development

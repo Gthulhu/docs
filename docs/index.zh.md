@@ -1,7 +1,9 @@
 <a href="https://landscape.cncf.io/?item=provisioning--automation-configuration--gthulhu" target="_blank"><img src="https://img.shields.io/badge/CNCF%20Landscape-5699C6?style=for-the-badge&logo=cncf&label=cncf" alt="cncf landscape" /></a>
 
+[![LFX Health Score](https://insights.linuxfoundation.org/api/badge/health-score?project=gthulhu)](https://insights.linuxfoundation.org/project/gthulhu)
 
-歡迎來到 Gthulhu 和 Qumun 的官方文檔！
+
+歡迎來到 Gthulhu 的官方網站，本網站詳細介紹了 Gthulhu 這款基於 Linux Scheduler Extension (sched_ext) 框架，專為優化雲原生工作負載而設計的先進 Linux 調度器。
 
 ## 📰 Latest News
 
@@ -12,19 +14,81 @@
     Gthulhu 已被納入 [eBPF Application Landscape](https://ebpf.io/applications/)，被認可為創新的基於 eBPF 的調度解決方案。
 
 ## 概覽
-Gthulhu 是為雲原生生態打造的下一代調度器，以 Go 語言開發，並由 qumun 框架驅動。
 
-名稱 Gthulhu 靈感來自神話生物克蘇魯（Cthulhu），其多條觸手象徵掌舵與掌控。正如觸手可抓握與引導，Gthulhu 代表在現代分散式系統的複雜世界裡掌舵前行的能力——就像 Kubernetes 以船舵作為其徽章一樣。
+Gthulhu 旨在為雲端原生生態系統提供可編排的分散式調度器解決方案，以滿足雲端原生應用程式動態且多樣化的需求，例如：
+- 需要低延遲處理能力的交易系統
+- 大數據分析需要高吞吐量的運算資源
+- 需要靈活資源分配的機器學習任務
 
-字首「G」源自本專案的核心語言 Go，突顯其技術基礎與對開發者友善的設計。
+預設的Linux核心調度器強調公平性，無法針對不同應用程式的特定需求進行最佳化。此外，當這些應用程式運行在分散式架構中時，傳統的調度器往往無法有效地協調和分配資源，導致效能瓶頸和資源浪費。
 
-在底層，Gthulhu 運行於 qumun 框架之上（qumun 在台灣原住民族布農語中意為「心臟」），呼應調度器作為作業系統「心臟」的角色。這不僅強調其在協調工作負載上的核心地位，也向全球開源社群分享一部分台灣原住民族文化。
+### 架構說明
 
-## 靈感來源
-本專案受 Andrea Righi 的演講「Crafting a Linux kernel scheduler in Rust」啟發。於是我花時間重寫 scx_rustland，命名為 qumun（scx_goland）。在完成基礎設施架構後，我重新定義了專案使命，讓 Gthulhu 成為面向雲原生工作負載的通用調度解決方案。
+為了讓使用者能夠輕鬆地將其意圖轉化為排程策略，Gthulhu 提供了一個直觀的介面，允許使用者使用機器可讀的語言（如 JSON）或透過 AI 代理與 MCP 進行溝通。在這些介面的背後，有幾個關鍵組件協同工作：
 
-## 功能與價值
-Gthulhu 簡化了從使用者意圖到調度策略的轉換。使用者可以使用機器友善的格式（例如 JSON），或透過具備 MCP 的 AI 代理與 Gthulhu 溝通，之後 Gthulhu 會根據您的輸入為特定工作負載進行最佳化。
+#### 1\. Gthulhu API Server (Manager Mode)
+
+Manager 接受使用者的策略請求，並將其轉換為具體的排程意圖。
+```bash
+$ curl -X POST http://localhost:8080/api/v1/strategies \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{            
+    "strategyNamespace": "default",
+    "labelSelectors": [
+      {"key": "app.kubernetes.io/name", "value": "prometheus"}
+    ],
+    "k8sNamespace": ["default"],
+    "priority": 10,
+    "executionTime": 20000000
+  }'
+```
+上方的範例展示了如何使用 curl 命令向 Gthulhu API Server 發送一個排程策略請求，Manger 收到該請求後會嘗試從 Kubernetes 叢集中選取符合標籤選擇器的 Pod，並根據指定的優先級和執行時間來調整這些 Pod 的排程策略。
+
+#### 2\. Gthulhu API Server (Decision Maker Mode)
+
+Decision Maker 會以 sidecar 的形式與叢集中每個節點上的 Gthulhu Scheduler 共存，根據 Manager 發送的的排程意圖尋找出目標 Process(es)。
+
+#### 3\. Gthulhu Scheduler
+
+Kubernetes 叢集中的每個節點都運行著 Gthulhu Scheduler，它負責監控系統資源使用情況，並且定時從 Decision Maker 獲取排程決策。根據這些決策，Gthulhu Scheduler 會調整目標 Process(es) 的 CPU 時間與優先度。
+
+Gthulhu Scheduler 可再細分為兩個部分：
+- **Gthulhu Agent**：負責與 Linux Kernel 的 sched_ext 框架進行互動，並應用排程決策。
+- **Qumun Framework**：提供底層的 eBPF 程式碼和相關工具，確保 Gthulhu Agent 能夠高效地與 Linux 核心進行溝通。
+
+下方的圖示展示了 Gthulhu 的整體架構：
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              Gthulhu Architecture                               │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│   ┌─────────────┐         ┌─────────────────────┐         ┌─────────────────┐   │
+│   │    User     │ ──────▶ │      Manager        │ ──────▶ │    MongoDB      │   │
+│   │  (Web UI)   │         │ (Central Management)│         │  (Persistence)  │   │
+│   └─────────────┘         └──────────┬──────────┘         └─────────────────┘   │
+│                                      │                                          │
+│                                      │                                          │
+│              ┌───────────────────────┼───────────────────────┐                  │
+│              │                       │                       │                  │
+│              ▼                       ▼                       ▼                  │
+│   ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐           │
+│   │ Gthulhu Agent & │     │ Gthulhu Agent & │     │ Gthulhu Agent & │           │
+│   │ Decision Maker  │     │ Decision Maker  │ ... │ Decision Maker  │           │
+│   │   (Node 1)      │     │   (Node 2)      │     │   (Node N)      │           │
+│   └────────┬────────┘     └────────┬────────┘     └────────┬────────┘           │
+│            │                       │                       │                    │
+│            ▼                       ▼                       ▼                    │
+│   ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐           │
+│   │  sched_ext      │     │  sched_ext      │     │  sched_ext      │           │
+│   │ (eBPF Scheduler)│     │ (eBPF Scheduler)│     │ (eBPF Scheduler)│           │
+│   └─────────────────┘     └─────────────────┘     └─────────────────┘           │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+了解 Gthulhu 的整體架構後，我們可以更清楚地看到各個組件如何協同工作，以實現高效的雲原生工作負載調度。
 
 ## DEMO
 
@@ -34,7 +98,7 @@ Gthulhu 簡化了從使用者意圖到調度策略的轉換。使用者可以使
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/p7cPlWHQrDY?si=WmI7TXsxTixD3E2C" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
-## Product Roadmap
+## 產品路線圖
 
 ```mermaid
 timeline
@@ -49,24 +113,9 @@ timeline
           Release 1 : ☑️  R1 DEMO (free5GC) : ☑️  R1 DEMO (MCP) : R1 DEMO (Agent Builder)
 ```
 
-## 架構設計
-
-這套調度器系統採用雙組件架構：
-
-1. **BPF 組件**: 實作低階 sched-ext 功能，在核心空間運行
-2. **使用者空間調度器**: 使用 Go 語言開發，實作實際的調度策略
-
-```mermaid
-graph TB
-    A[使用者空間應用程式] --> B[Go 調度器]
-    B --> C[BPF 程式]
-    C --> D[Linux 核心 sched_ext]
-    D --> E[CPU 核心]
-```
-
 ## 開源授權
 
-本專案採用 **GNU General Public License version 2** 授權。
+本專案採用 **Apache License 2.0** 授權。
 
 ## 社群與支援
 
