@@ -9,6 +9,7 @@ nav:
   - Get Started:
     - Installation: installation.md
     - K8s Deployment: k8s.md
+    - Configuring the scheduling policies: gui.md
     - How It Works: how-it-works.md
     - Project Goals: project-goals.md
     - Development History: development-history.md
