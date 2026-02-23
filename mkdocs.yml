@@ -10,6 +10,7 @@ nav:
     - Installation: installation.md
     - K8s Deployment: k8s.md
     - Configuring the scheduling policies: gui.md
+    - Working with multi-node cluster: multi-node.md
     - How It Works: how-it-works.md
     - Project Goals: project-goals.md
     - Development History: development-history.md
