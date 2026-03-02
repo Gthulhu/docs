@@ -1,32 +1,145 @@
 # How It Works
 
-This page provides detailed information about the core working principles and technical architecture of Gthulhu and Qumun schedulers.
+This page provides detailed information about the core working principles and technical architecture of Gthulhu.
 
 ## Overall Architecture
 
-### Dual-Component Design
+Gthulhu provides an orchestrable, distributed scheduler solution for the cloud-native ecosystem.
+The architecture consists of multiple components working together:
 
-Gthulhu scheduler adopts a modern dual-component architecture:
+```mermaid
+graph TB
+    subgraph "Control Plane"
+        U[User / Web UI] -->|Configure Strategies| M[Manager<br/>Central Management]
+        M -->|Persist| DB[(MongoDB)]
+        M -->|Query Pods| K8S[Kubernetes API<br/>Pod Informer]
+    end
+
+    M -->|Distribute Intents| DM1
+    M -->|Distribute Intents| DM2
+    M -->|Distribute Intents| DMN
+
+    subgraph "Node 1"
+        DM1[Decision Maker] --> S1[Gthulhu Scheduler<br/>sched_ext / eBPF]
+    end
+
+    subgraph "Node 2"
+        DM2[Decision Maker] --> S2[Gthulhu Scheduler<br/>sched_ext / eBPF]
+    end
+
+    subgraph "Node N"
+        DMN[Decision Maker] --> SN[Gthulhu Scheduler<br/>sched_ext / eBPF]
+    end
+```
+
+### Component Overview
+
+#### 1. Manager (Control Plane)
+
+The [Manager](https://github.com/Gthulhu/api) serves as the central management service, responsible for:
+
+- User authentication and authorization (JWT)
+- Role and permission management (RBAC)
+- CRUD operations for scheduling strategies
+- Monitoring Pod status via Kubernetes Informer
+- Distributing scheduling intents to Decision Makers on each node
+- Data persistence to MongoDB
+
+#### 2. Decision Maker (Per-Node Agent)
+
+The [Decision Maker](https://github.com/Gthulhu/api) is deployed on each Kubernetes node as a DaemonSet, responsible for:
+
+- Receiving scheduling intents from the Manager
+- Scanning `/proc` filesystem to discover Pod processes
+- Converting scheduling strategies (label-based) into concrete PID-based scheduling decisions
+- Providing PID-level strategies to the local Gthulhu Scheduler
+- Collecting eBPF scheduler metrics and exposing them via Prometheus
+
+#### 3. Gthulhu Scheduler (sched_ext)
+
+The [Gthulhu Scheduler](https://github.com/Gthulhu/Gthulhu) is the core scheduling component running on each node, built on a dual-component design:
 
 ![](./assets/qumun.png)
 
-#### 1. BPF Scheduler
+##### BPF Scheduler
 
 A BPF scheduler implemented based on the Linux kernel's sched_ext framework, responsible for low-level scheduling functions such as task queue management, CPU selection logic, and scheduling execution.
 The BPF scheduler communicates with the user-space Gthulhu scheduler through two types of eBPF Maps: ring buffer and user ring buffer.
 
-#### 2. Gthulhu (User Space Scheduler)
+##### User Space Scheduler
 
-The Gthulhu scheduler, developed using the qumun framework, receives information about tasks to be scheduled from the ring buffer eBPF Map and makes decisions based on scheduling policies.
+The user-space scheduler, developed using the [qumun framework](https://github.com/Gthulhu/qumun), receives information about tasks to be scheduled from the ring buffer eBPF Map and makes decisions based on scheduling policies.
 Finally, the scheduling results are sent back to the BPF Scheduler through the user ring buffer eBPF Map.
+
+## Plugin System
 
 ![](./assets/plugin.png)
 
-The Gthulhu scheduler supports a plugin-based design, allowing developers to extend and customize scheduling policies according to their needs.
-[Gthulhu/plugin](https://github.com/Gthulhu/plugin/tree/main/plugin) currently implements two schedulers:
+Gthulhu supports a plugin-based design using a **factory pattern** with a plugin registry, allowing developers to extend and customize scheduling policies.
 
-- Simple Scheduler: A simple scheduler implemented with reference to scx_simple, with core logic of approximately 200 lines.
-- Gthulhu Scheduler: A virtual runtime-based scheduler with latency-sensitive optimization and CPU topology-aware features.
+### Plugin Interface
+
+The plugin system defines two core interfaces:
+
+- **`Sched`**: Low-level scheduler operations (`DequeueTask`, `DefaultSelectCPU`, `GetNrQueued`)
+- **`CustomScheduler`**: Plugin-level operations that each scheduler must implement:
+    - `DrainQueuedTask` — Drain queued tasks from eBPF
+    - `SelectQueuedTask` — Select a task from the queue
+    - `SelectCPU` — Select an appropriate CPU for the task
+    - `DetermineTimeSlice` — Calculate the time slice for execution
+    - `GetPoolCount` — Get the number of tasks in the dispatch pool
+    - `SendMetrics` — Send metrics to the monitoring system
+    - `GetChangedStrategies` — Retrieve changed scheduling strategies
+
+### Available Plugins
+
+| Mode | Description |
+|------|-------------|
+| `gthulhu` | Advanced scheduler with API integration, scheduling strategies, JWT authentication, and metrics reporting |
+| `simple` | Simple weighted virtual runtime (vtime) scheduler |
+| `simple-fifo` | Simple FIFO (First-In, First-Out) scheduler |
+
+### Plugin Registration
+
+Plugins are registered via Go's `init()` mechanism using the factory pattern:
+
+```go
+func init() {
+    plugin.RegisterNewPlugin("myplugin", func(ctx context.Context, config *plugin.SchedConfig) (plugin.CustomScheduler, error) {
+        return NewMyPlugin(config), nil
+    })
+}
+```
+
+## Scheduler Execution Flow
+
+The main scheduling loop processes tasks as follows:
+
+```mermaid
+flowchart TD
+    A[Start Scheduler Loop] --> B{Check context Done}
+    B -->|Yes| D[End]
+    B -->|No| E[DrainQueuedTask]
+    E --> F[SelectQueuedTask]
+    F --> G{Task available?}
+    G -->|No| H[Block until ready]
+    H --> B
+    G -->|Yes| J[Create DispatchedTask]
+    J --> K[Calculate deadline / vtime]
+    K --> L[DetermineTimeSlice]
+    L --> M{Custom execution time?}
+    M -->|Yes| O[Use custom time slice]
+    M -->|No| P[Use default algorithm]
+    O --> Q[SelectCPU]
+    P --> Q
+    Q --> R{CPU selected?}
+    R -->|No| B
+    R -->|Yes| U[DispatchTask]
+    U --> V{Dispatch successful?}
+    V -->|No| B
+    V -->|Yes| X[NotifyComplete]
+    X --> B
+```
 
 ## CPU Topology-Aware Scheduling
 
@@ -69,59 +182,58 @@ graph TB
     Q -->|No| S[Return EBUSY]
 ```
 
-## API and Scheduling Policy Design
+## API and Scheduling Strategy Design
 
-Gthulhu implements a flexible mechanism to dynamically adjust its scheduling behavior through a RESTful API interface. This allows operators to fine-tune the scheduler's performance characteristics without restarting or recompiling the code.
+Gthulhu implements a flexible mechanism to dynamically adjust scheduling behavior through RESTful API interfaces. The system uses a dual-mode API architecture with a Manager and per-node Decision Makers.
 
 ### API Architecture
 
-The API server provides endpoints for retrieving and setting scheduling strategies:
-
 ```mermaid
 graph TB
-    A[Gthulhu Scheduler] -->|Periodic Requests| B[API Server]
-    C[Operators/Admins] -->|Configure Strategies| B
-    B -->|Return Strategies| A
-    A -->|Apply Strategies| D[Task Scheduling]
-    
-    subgraph "External Management"
-        C
-    end
-    
-    subgraph "Scheduling System"
-        A
-        D
-    end
+    A[User / Web UI] -->|Manage Strategies| B[Manager]
+    B -->|Store| C[(MongoDB)]
+    B -->|Query Pods| D[Kubernetes API]
+    B -->|Distribute Intents| E[Decision Maker<br/>Node 1]
+    B -->|Distribute Intents| F[Decision Maker<br/>Node N]
+    E -->|Provide PID Strategies| G[Gthulhu Scheduler]
+    F -->|Provide PID Strategies| H[Gthulhu Scheduler]
+    G -->|Report Metrics| E
+    H -->|Report Metrics| F
 ```
 
-#### API Endpoints
+#### Manager Endpoints
 
-The API server exposes two primary endpoints for scheduling strategy management:
+The Manager handles user-facing operations:
 
-- **GET /api/v1/scheduling/strategies**: Retrieves current scheduling strategies
-- **POST /api/v1/scheduling/strategies**: Sets new scheduling strategies
+- **POST /api/v1/auth/login**: User authentication
+- **POST /api/v1/strategies**: Create scheduling strategy
+- **GET /api/v1/strategies/self**: List own strategies
+- **GET /api/v1/intents/self**: List scheduling intents
+
+#### Decision Maker Endpoints
+
+The Decision Maker runs on each node and interacts with the Gthulhu Scheduler:
+
+- **GET /api/v1/scheduling/strategies**: Retrieves PID-level scheduling strategies for the local scheduler
+- **POST /api/v1/metrics**: Receives scheduler metrics data
 
 ### Scheduling Strategy Data Model
 
-A scheduling strategy is represented using the following structure:
+A scheduling strategy at the Decision Maker level is represented using the following structure:
 
 ```json
 {
+  "success": true,
   "scheduling": [
     {
-      "priority": true,
+      "priority": 1,
       "execution_time": 20000000,
       "pid": 12345
     },
     {
-      "priority": false,
+      "priority": 0,
       "execution_time": 10000000,
-      "selectors": [
-        {
-          "key": "tier",
-          "value": "control-plane"
-        }
-      ]
+      "pid": 67890
     }
   ]
 }
@@ -129,30 +241,32 @@ A scheduling strategy is represented using the following structure:
 
 Key components of a scheduling strategy:
 
-1. **Priority** (`boolean`): When true, the task's virtual runtime is set to the minimum value, effectively giving it the highest scheduling priority
+1. **Priority** (`int`): When greater than 0, the task's virtual runtime is set to the minimum value, giving it the highest scheduling priority
 2. **Execution Time** (`uint64`): Custom time slice in nanoseconds for the task
 3. **PID** (`int`): Process ID to which the strategy applies
-4. **Selectors** (`array`): Optional Kubernetes label selectors for targeting groups of processes
+
+!!! note
+    Label selectors for Kubernetes Pods are handled at the Manager/Decision Maker level.
+    The Decision Maker resolves label selectors into specific PIDs by scanning `/proc` for matching Pod processes before passing them to the scheduler.
 
 ### Strategy Application Flow
 
-The process of fetching and applying scheduling strategies follows this sequence:
-
 ```mermaid
 sequenceDiagram
-    participant S as Scheduler
-    participant A as API Server
+    participant M as Manager
+    participant DM as Decision Maker
+    participant S as Gthulhu Scheduler
     participant T as Task Pool
-    
-    S->>S: Initialize scheduler
-    S->>S: Start strategy fetcher
-    
+
+    M->>DM: Distribute scheduling intents
+    DM->>DM: Resolve Pod labels → PIDs
+
     loop Every interval seconds
-        S->>A: Request current strategies
-        A->>S: Return strategy list
+        S->>DM: Fetch PID-level strategies
+        DM->>S: Return strategy list
         S->>S: Update strategy map
     end
-    
+
     Note over S,T: During task scheduling
     T->>S: Task needs scheduling
     S->>S: Check if task has custom strategy
@@ -161,33 +275,28 @@ sequenceDiagram
     S->>T: Schedule task with applied strategy
 ```
 
-### Kubernetes Integration
+### Authentication and Security
 
-For containerized environments, Gthulhu can map scheduling strategies to specific pods using label selectors:
+The Gthulhu API supports multiple security mechanisms:
 
-1. **Label Selector Resolution**: The API server translates label selectors into specific PIDs by scanning the system for matching pods
-2. **PID Mapping**: Each pod's processes are identified and associated with the appropriate scheduling strategy
-3. **Dynamic Updates**: As pods are created, destroyed, or moved, the scheduler adapts by periodically refreshing its strategies
+- **JWT Authentication**: RSA asymmetric encryption token-based authentication between the Scheduler and Decision Maker
+- **Mutual TLS (mTLS)**: Optional mutual TLS for secure communication between components
+- **RBAC**: Role-Based Access Control for user management on the Manager
 
-### Strategy Prioritization Logic
+## Kernel Mode
 
-When applying scheduling strategies, Gthulhu follows these rules:
+Gthulhu supports an experimental **kernel mode** where scheduling decisions are made entirely in BPF space without the user-space scheduling loop. In this mode:
 
-1. **Direct PID Match**: Strategies that explicitly specify a PID have highest precedence
-2. **Label Selector Match**: Strategies using label selectors apply to all matching processes
-3. **Default Behavior**: Processes without specific strategies use the standard scheduling algorithm
+- The BPF scheduler handles task dispatching directly in the kernel
+- The user-space component only manages strategy updates and monitoring
+- Strategy changes are pushed to the BPF scheduler via eBPF map updates (`UpdatePriorityTaskWithPrio`, `RemovePriorityTask`)
 
-### Configuration Parameters
-
-The strategy fetching behavior can be configured through the scheduler's configuration file:
+This mode can reduce latency by avoiding the kernel-to-user-space round trip for each scheduling decision.
 
 ```yaml
-api:
-  url: "http://api-server:8080"   # API server endpoint
-  interval: 10                    # Refresh interval in seconds
+scheduler:
+  kernel_mode: true   # Enable kernel-mode scheduling
 ```
-
-This architecture allows for dynamic, fine-grained control over scheduling behavior without interrupting the scheduler's operation.
 
 ## BPF and User Space Communication
 
@@ -198,12 +307,62 @@ sequenceDiagram
     participant K as BPF (Kernel Space)
     participant U as Go (User Space)
     
-    K->>U: Task Creation Event
-    U->>U: Analyze Task Characteristics
-    U->>K: Set Scheduling Parameters
-    K->>K: Apply Scheduling Decision
-    K->>U: Statistics Update
-    U->>U: Dynamic Strategy Adjustment
+    K->>U: Enqueue tasks via ring buffer
+    U->>U: Drain queued tasks
+    U->>U: Select task & determine time slice
+    U->>U: Select CPU (topology-aware)
+    U->>K: Dispatch task via user ring buffer
+    K->>K: Execute scheduling decision
+    
+    Note over K,U: Periodic metrics reporting
+    U->>U: Collect BSS data (nr_queued, nr_scheduled, etc.)
+    U-->>U: Send metrics to API server
+```
+
+### Metrics Data
+
+The scheduler collects and reports the following metrics:
+
+| Metric | Description |
+|--------|-------------|
+| `nr_queued` | Number of tasks queued in the scheduler |
+| `nr_scheduled` | Number of tasks scheduled |
+| `nr_running` | Number of tasks currently running |
+| `nr_online_cpus` | Number of online CPUs |
+| `nr_user_dispatches` | Number of user-space dispatches |
+| `nr_kernel_dispatches` | Number of kernel-space dispatches |
+| `nr_cancel_dispatches` | Number of canceled dispatches |
+| `nr_bounce_dispatches` | Number of bounce dispatches |
+| `nr_failed_dispatches` | Number of failed dispatches |
+| `nr_sched_congested` | Number of scheduler congestion events |
+
+## Configuration
+
+Gthulhu uses a YAML configuration file for all settings:
+
+```yaml
+scheduler:
+  slice_ns_default: 20000000    # Default time slice (20ms)
+  slice_ns_min: 1000000         # Minimum time slice (1ms)
+  mode: gthulhu                 # Plugin mode: gthulhu, simple, simple-fifo
+  kernel_mode: false            # Experimental kernel-mode scheduling
+  max_time_watchdog: true       # Detect scheduling stalls
+
+api:
+  url: http://127.0.0.1:8080    # Decision Maker endpoint
+  interval: 5                   # Strategy fetch interval (seconds)
+  public_key_path: ./config/jwt_public_key.pem
+  enabled: true                 # Enable API communication
+  auth_enabled: true            # Enable JWT authentication
+  mtls:
+    enable: false               # Enable mutual TLS
+    cert_pem: ""
+    key_pem: ""
+    ca_pem: ""
+
+debug: false                    # Enable debug mode (pprof on :6060)
+early_processing: false         # Early task processing in BPF
+builtin_idle: false             # Built-in idle CPU selection in BPF
 ```
 
 ## Debugging and Monitoring
@@ -227,14 +386,9 @@ sudo bpftool map dump name task_info_map
 | Task Classification | Unified processing | Automatic classification optimization |
 | CPU Selection | Basic load balancing | Topology-aware + cache affinity |
 | Dynamic Adjustment | Limited | Comprehensive adaptive adjustment |
-| Extensibility | Kernel built-in | User-space extensible |
-
-## Future Development Directions
-
-1. **Machine Learning Integration**: Use ML models to predict task behavior
-2. **Container-Aware Scheduling**: Optimization for containerized environments
-3. **Energy Optimization**: Integration of power management considerations
-4. **Real-Time Task Support**: Support for hard real-time task scheduling
+| Extensibility | Kernel built-in | User-space extensible (plugin system) |
+| Multi-Node | Not applicable | Distributed scheduling via Manager |
+| Strategy Management | Static kernel parameters | Dynamic REST API + Kubernetes integration |
 
 ---
 
