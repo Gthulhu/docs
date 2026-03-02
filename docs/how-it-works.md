@@ -173,10 +173,10 @@ graph TB
     G -->|No| M{Any Idle CPU in L2 Cache?}
     
     M -->|Yes| N[Use CPU in Same L2 Cache]
-    M -->|No| O2{Any Idle CPU in L3 Cache?}
+    M -->|No| O{Any Idle CPU in L3 Cache?}
     
-    O2 -->|Yes| P[Use CPU in Same L3 Cache]
-    O2 -->|No| Q{Any Idle CPU Available?}
+    O -->|Yes| P[Use CPU in Same L3 Cache]
+    O -->|No| Q{Any Idle CPU Available?}
     
     Q -->|Yes| R[Use Any Idle CPU]
     Q -->|No| S[Return EBUSY]
