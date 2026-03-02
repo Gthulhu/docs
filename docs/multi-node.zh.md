@@ -1,5 +1,7 @@
 # 使用 Gthulhu 管理多節點策略
 
+![Static Badge](https://img.shields.io/badge/version-v0.6.0-blue)
+
 承續「使用 Web GUI 設定 scheduling policies」的內容，這裡將介紹如何使用 Gthulhu 管理多節點的 scheduling policies。
 事實上，Gthulhu 的設計初衷就是為了管理多節點的 scheduling policies，所以在設定 Policy 時，Gthulhu 會自動將設定同步到所有節點上。
 

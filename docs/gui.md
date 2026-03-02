@@ -1,5 +1,7 @@
 # Configuring Scheduling Policies via Web GUI
 
+![Static Badge](https://img.shields.io/badge/version-v0.6.0-blue)
+
 Gthulhu provides a Web GUI that allows users to conveniently configure scheduling policies.
 
 > **Note**

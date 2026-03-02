@@ -1,5 +1,7 @@
 # 使用 Web GUI 設定 scheduling policies
 
+![Static Badge](https://img.shields.io/badge/version-v0.6.0-blue)
+
 Gthulhu 提供了一個 Web GUI，讓使用者可以方便地設定 scheduling policies。
 
 > !注意

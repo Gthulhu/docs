@@ -1,5 +1,7 @@
 # Managing Multi-Node Policies with Gthulhu
 
+![Static Badge](https://img.shields.io/badge/version-v0.6.0-blue)
+
 Following the content from "Configuring Scheduling Policies via Web GUI", this section will introduce how to use Gthulhu to manage scheduling policies across multiple nodes.
 In fact, Gthulhu was designed from the beginning to manage scheduling policies across multiple nodes. When configuring a Policy, Gthulhu automatically synchronizes the configuration to all nodes.
 
