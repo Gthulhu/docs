@@ -1,6 +1,6 @@
 # 使用 gthulhu-cli
 
-![Static Badge](https://img.shields.io/badge/version-v0.6.0-blue)
+![Static Badge](https://img.shields.io/badge/version-v0.6.1-blue)
 
 有時候，我們需要在無 GUI 環境下對 Gthulhu 進行測試，雖然 curl 能夠幫助我們與 Gthulhu API Server 互動，但使用上仍不夠直觀。
 為此，我們提供 cli 工具來解決這個問題。
