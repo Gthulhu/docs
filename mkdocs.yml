@@ -15,7 +15,7 @@ nav:
     - How It Works: how-it-works.md
     - Project Goals: project-goals.md
     - Development History: development-history.md
-    - API Reference: api-reference.md
+    - API Reference: https://pkg.go.dev/github.com/Gthulhu/qumun/goland_core
     - FAQ: faq.md
     - Mentioned: mentioned.md
   - Contributing: contributing.md
