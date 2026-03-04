@@ -5,6 +5,8 @@
 
 歡迎來到 Gthulhu 的官方網站，本網站詳細介紹了 Gthulhu 這款基於 Linux Scheduler Extension (sched_ext) 框架，專為優化雲原生工作負載而設計的先進 Linux 調度器。
 
+[📝 分享你如何使用 Gthulhu](https://docs.google.com/forms/d/e/1FAIpQLSeT9Ia1iigu45DDbPgfqijWIN7-Ewkm6-AbTc-HsjyHMvBjCA/viewform?usp=publish-editor){: .md-button .md-button--primary }
+
 ## 📰 Latest News
 
 !!! success "Gthulhu 加入 CNCF Landscape"

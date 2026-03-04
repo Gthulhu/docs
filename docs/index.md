@@ -4,6 +4,8 @@
 
 Welcome to the official website of Gthulhu. This site provides detailed information about Gthulhu, an advanced Linux scheduler designed to optimize cloud-native workloads based on the Linux Scheduler Extension (sched_ext) framework.
 
+[📝 Share Your Case Study](https://docs.google.com/forms/d/e/1FAIpQLSeT9Ia1iigu45DDbPgfqijWIN7-Ewkm6-AbTc-HsjyHMvBjCA/viewform?usp=publish-editor){: .md-button .md-button--primary }
+
 ## 📰 Latest News
 
 !!! success "Gthulhu joins CNCF Landscape"
