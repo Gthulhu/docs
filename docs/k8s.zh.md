@@ -32,14 +32,14 @@ $ docker push 127.0.0.1:32000/gthulhu:latest
 接下來，使用以下命令將 Gthulhu 部署到 Kubernetes 叢集：
 
 ```sh
-$ cd chart
-$ helm install gthulhu gthulhu
+$ cd chart/gthulhu
+$ helm install gthulhu . --set mtls.enabled=true --set-file mtls.ca.cert=certs/ca.crt --set-file mtls.dm.cert=certs/dm.crt --set-file mtls.dm.key=certs/dm.key --set-file mtls.manager.cert=certs/manager.crt --set-file mtls.manager.key=certs/manager.key
 ```
 
 若要使用官方的 Gthulhu Docker 映像檔，而非本地編譯的版本，請執行：
 
 ```sh
-helm install gthulhu gthulhu -f ./gthulhu/values-production.yaml
+$ helm install gthulhu . -f ./values-production.yaml --set mtls.enabled=true --set-file mtls.ca.cert=certs/ca.crt --set-file mtls.dm.cert=certs/dm.crt --set-file mtls.dm.key=certs/dm.key --set-file mtls.manager.cert=certs/manager.crt --set-file mtls.manager.key=certs/manager.key
 ```
 
 若沒有出現任何錯誤，使用以下命令理應可以看到 Gthulhu 的 Pod 已成功啟動：
@@ -93,3 +93,23 @@ time=2026-01-28T04:16:34.495Z level=INFO msg="bss data" data="{\"nr_running\":22
 
 !!! info "深入了解"
     Gthulhu 提供的 helm chart 皆使用 DaemonSet 作為 pod generator，以此確保每個節點皆會運行一個 Gthulhu 排程器服務。
+
+## 檢查 Policy 與 Intent
+
+![Static Badge](https://img.shields.io/badge/version-v1.0.0+-blue)
+
+當你完成 Gthulhu 的部署，並且根據[使用 Web GUI 設定 scheduling policies](./gui.zh.md)順利設定 Scheduling Strategy 之後，你應該能夠透過 kubectl 查看 Gthulhu 所定義的 Custom Resource：
+```
+$ kubectl get schedulingstrategies.gthulhu.io -n gthulhu-system
+NAME                       PRIORITY   CREATOR                    AGE
+69afe18156b0ab11513bd8f2   10         696f39d9b12be8ecfe9a6dc5   40s
+$ kubectl get schedulingintents.gthulhu.io -n gthulhu-system
+NAME                       STRATEGY                   POD                                                         NODE    STATE   AGE
+69afe18156b0ab11513bd8f3   69afe18156b0ab11513bd8f2   kube-prometheus-stack-grafana-567d665788-6k48v              myvm    2       51s
+69afe18156b0ab11513bd8f4   69afe18156b0ab11513bd8f2   kube-prometheus-stack-prometheus-node-exporter-fdc7l        myvm    2       51s
+69afe18156b0ab11513bd8f5   69afe18156b0ab11513bd8f2   kube-prometheus-stack-operator-9d4d68854-bfzzt              myvm    2       51s
+69afe18156b0ab11513bd8f6   69afe18156b0ab11513bd8f2   kube-prometheus-stack-kube-state-metrics-7846957b5b-lllwj   myvm    2       51s
+69afe18156b0ab11513bd8f7   69afe18156b0ab11513bd8f2   kube-prometheus-stack-prometheus-node-exporter-k8gg4        d11nn   2       51s
+```
+
+Gthulhu API Manager 利用 K8s 的 CRD 定義了 `schedulingstrategies.gthulhu.io` 與 `schedulingintents.gthulhu.io` 兩種資源，並且根據 `schedulingstrategies.gthulhu.io` 生成對應的 `schedulingintents.gthulhu.io`，使 Gthulhu Scheduler 能夠與 sidecar（Gthulhu decision maker）溝通，取得 Pod 背後對應的 PID(s) 與相關策略。

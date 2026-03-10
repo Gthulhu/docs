@@ -32,14 +32,14 @@ $ docker push 127.0.0.1:32000/gthulhu:latest
 Next, use the following commands to deploy Gthulhu to the Kubernetes cluster:
 
 ```sh
-$ cd chart
-$ helm install gthulhu gthulhu
+$ cd chart/gthulhu
+$ helm install gthulhu . --set mtls.enabled=true --set-file mtls.ca.cert=certs/ca.crt --set-file mtls.dm.cert=certs/dm.crt --set-file mtls.dm.key=certs/dm.key --set-file mtls.manager.cert=certs/manager.crt --set-file mtls.manager.key=certs/manager.key
 ```
 
 To use the official Gthulhu Docker images instead of the locally built ones, run:
 
 ```sh
-helm install gthulhu gthulhu -f ./gthulhu/values-production.yaml
+$ helm install gthulhu . -f ./values-production.yaml --set mtls.enabled=true --set-file mtls.ca.cert=certs/ca.crt --set-file mtls.dm.cert=certs/dm.crt --set-file mtls.dm.key=certs/dm.key --set-file mtls.manager.cert=certs/manager.crt --set-file mtls.manager.key=certs/manager.key
 ```
 
 If no errors occur, you should be able to see that the Gthulhu pods have started successfully:
@@ -93,3 +93,23 @@ If you can see logs similar to the above, it means Gthulhu is successfully runni
 
 !!! info "Learn More"
     The Helm chart provided by Gthulhu uses DaemonSet as the pod generator to ensure that each node runs a Gthulhu scheduler service.
+
+## Checking Policies and Intents
+
+![Static Badge](https://img.shields.io/badge/version-v1.0.0+-blue)
+
+After you complete the deployment of Gthulhu and successfully configure the Scheduling Strategy according to [Configuring Scheduling Policies via Web GUI](./gui.md), you should be able to view the Custom Resources defined by Gthulhu using kubectl:
+```
+$ kubectl get schedulingstrategies.gthulhu.io -n gthulhu-system
+NAME                       PRIORITY   CREATOR                    AGE
+69afe18156b0ab11513bd8f2   10         696f39d9b12be8ecfe9a6dc5   40s
+$ kubectl get schedulingintents.gthulhu.io -n gthulhu-system
+NAME                       STRATEGY                   POD                                                         NODE    STATE   AGE
+69afe18156b0ab11513bd8f3   69afe18156b0ab11513bd8f2   kube-prometheus-stack-grafana-567d665788-6k48v              myvm    2       51s
+69afe18156b0ab11513bd8f4   69afe18156b0ab11513bd8f2   kube-prometheus-stack-prometheus-node-exporter-fdc7l        myvm    2       51s
+69afe18156b0ab11513bd8f5   69afe18156b0ab11513bd8f2   kube-prometheus-stack-operator-9d4d68854-bfzzt              myvm    2       51s
+69afe18156b0ab11513bd8f6   69afe18156b0ab11513bd8f2   kube-prometheus-stack-kube-state-metrics-7846957b5b-lllwj   myvm    2       51s
+69afe18156b0ab11513bd8f7   69afe18156b0ab11513bd8f2   kube-prometheus-stack-prometheus-node-exporter-k8gg4        d11nn   2       51s
+```
+
+Gthulhu API Manager leverages K8s CRDs to define two types of resources: `schedulingstrategies.gthulhu.io` and `schedulingintents.gthulhu.io`. It generates corresponding `schedulingintents.gthulhu.io` resources based on `schedulingstrategies.gthulhu.io`, enabling the Gthulhu Scheduler to communicate with the sidecar (Gthulhu decision maker) to retrieve the PIDs associated with the pods and related policies.
