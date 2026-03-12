@@ -43,11 +43,11 @@ The [Manager](https://github.com/Gthulhu/api) serves as the central management s
 - CRUD operations for scheduling strategies
 - Monitoring Pod status via Kubernetes Informer
 - Distributing scheduling intents to Decision Makers on each node
-- Data persistence to MongoDB
+- Data persistence to MongoDB (For `v1.0.0+`, refer to [Deploying Gthulhu with Kubernetes](./k8s.md) for CRD-based management)
 
 #### 2. Decision Maker (Per-Node Agent)
 
-The [Decision Maker](https://github.com/Gthulhu/api) is deployed on each Kubernetes node as a DaemonSet, responsible for:
+The [Decision Maker](https://github.com/Gthulhu/api) runs as a Sidecar alongside the Gthulhu Scheduler and is responsible for:
 
 - Receiving scheduling intents from the Manager
 - Scanning `/proc` filesystem to discover Pod processes

@@ -43,17 +43,17 @@ graph TB
 - 排程策略的 CRUD 操作
 - 通過 Kubernetes Informer 監控 Pod 狀態
 - 將排程意圖分發到各節點的 Decision Maker
-- 資料持久化至 MongoDB
+- 資料持久化至 MongoDB（`v1.0.0+` 使用 CRD 管理，請參考 [Deploying Gthulhu with Kubernetes](./k8s.md)）
 
 #### 2. Decision Maker（節點代理）
 
-[Decision Maker](https://github.com/Gthulhu/api) 以 DaemonSet 形式部署在每個 Kubernetes 節點上，負責：
+[Decision Maker](https://github.com/Gthulhu/api) 以 Sidecar 的形式與 Gthulhu 排成器器共處，負責：
 
 - 接收來自 Manager 的排程意圖
 - 掃描 `/proc` 檔案系統以發現 Pod 進程
 - 將排程策略（基於標籤）轉換為具體的 PID 級別排程決策
 - 向本地 Gthulhu 排程器提供 PID 級別的策略
-- 收集 eBPF 排程器指標並通過 Prometheus 暴露
+- 收集 eBPF 排程器指標並通過 Prometheus 暴光
 
 #### 3. Gthulhu 排程器（sched_ext）
 
