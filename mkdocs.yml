@@ -10,6 +10,7 @@ nav:
     - Installation: installation.md
     - K8s Deployment: k8s.md
     - Configuring the scheduling policies: gui.md
+    - Pod-Level Scheduling Metrics: pod-metrics.md
     - Working with multi-node cluster: multi-node.md
     - Debugging with gthulhu-cli: cli.md
     - API Reference: https://pkg.go.dev/github.com/Gthulhu/qumun/goland_core
@@ -71,6 +72,7 @@ plugins:
             Get Started: 開始使用
             Installation: 安裝
             K8s Deployment: K8s 部署
+            Pod-Level Scheduling Metrics: Pod 級排程指標
             How It Works: 運作原理
             Project Goals: 專案目標
             Development History: 開發歷史

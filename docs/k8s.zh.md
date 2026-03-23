@@ -96,7 +96,7 @@ time=2026-01-28T04:16:34.495Z level=INFO msg="bss data" data="{\"nr_running\":22
 
 ## 檢查 Policy 與 Intent
 
-![Static Badge](https://img.shields.io/badge/version-v1.0.0+-blue)
+![Static Badge](https://img.shields.io/badge/version-v1.1.0-blue)
 
 當你完成 Gthulhu 的部署，並且根據[使用 Web GUI 設定 scheduling policies](./gui.zh.md)順利設定 Scheduling Strategy 之後，你應該能夠透過 kubectl 查看 Gthulhu 所定義的 Custom Resource：
 ```

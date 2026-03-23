@@ -29,8 +29,6 @@ Next, you can add or delete scheduling policies, and view the current list of sc
 - **Command Regex**: A regular expression used to match commands. For example, `.*` matches all processes on Pods found by the label selector.
 - **K8s Namespaces**: Specifies the Kubernetes Namespace(s) to which the scheduling policy applies.
 
-If the scheduling policy takes effect correctly, you will see scheduling intents being generated:
-
-![alt text](./assets/gui4.png)
+If the scheduling policy takes effect correctly, you will see scheduling intents being generated.
 
 Scheduling intents are generated based on scheduling policies. Once a scheduling policy takes effect, the Gthulhu API Server (Manager Mode) will generate corresponding scheduling intents based on that policy. These intents are then sent to the Gthulhu Scheduler on the node where the Pod resides, allowing the Scheduler to adjust the Pod's resource allocation based on the intents to achieve optimized scheduling.

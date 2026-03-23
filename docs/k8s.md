@@ -96,7 +96,7 @@ If you can see logs similar to the above, it means Gthulhu is successfully runni
 
 ## Checking Policies and Intents
 
-![Static Badge](https://img.shields.io/badge/version-v1.0.0+-blue)
+![Static Badge](https://img.shields.io/badge/version-v1.1.0-blue)
 
 After you complete the deployment of Gthulhu and successfully configure the Scheduling Strategy according to [Configuring Scheduling Policies via Web GUI](./gui.md), you should be able to view the Custom Resources defined by Gthulhu using kubectl:
 ```

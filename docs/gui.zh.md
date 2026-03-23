@@ -29,8 +29,6 @@ Gthulhu 提供了一個 Web GUI，讓使用者可以方便地設定 scheduling p
 - Command Regex：用於匹配命令的正則表達式，例如：`.*` 能夠匹配符合 label selector 找到的 Pod 上的所有 Process。
 - K8s Namespaces：指定該 scheduling policy 適用的 Kubernetes Namespace。
 
-若 scheduling policy 正確生效，你會看到 scheduling intent 產生：
-
-![alt text](./assets/gui4.png)
+若 scheduling policy 正確生效，你會看到 scheduling intent 產生。
 
 scheduling intent 是根據 scheduling policy 產生的，當 scheduling policy 生效後，Gthulhu API Server（Manager Mode） 會根據該 policy 產生對應的 scheduling intent。再將這些 intent 送往 Pod 所屬 node 上的 Gthulhu Scheduler，讓 Scheduler 根據 intent 來調整 Pod 的資源配置，以達到最佳化排程的目的。
