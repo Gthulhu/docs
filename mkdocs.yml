@@ -17,6 +17,9 @@ nav:
     - Troubleshooting: faq.md
   - Blog:
     - How It Works: how-it-works.md
+    - Improving Network Performance with Custom eBPF-based Schedulers: https://free5gc.org/blog/20251126/20251126/
+    - Implementing GTP-driven Automatic Scheduling Optimization with eBPF-based Scheduler: https://free5gc.org/blog/20251126/20251126/
+
   - Mentioned: mentioned.md
   - Contributing: contributing.md
 

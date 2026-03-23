@@ -3,20 +3,20 @@
 
 /* 覆蓋 Material for MkDocs 主題色（讓所有使用主色的元件一致） */
 :root {
-  --md-typeset-a-color: #507c6c !important;
-  --md-primary-fg-color: #6a887d;
-  --md-primary-fg-color--light: #7f9f93; /* 稍微偏亮的主色，用於 hover 等狀態 */
-  --md-primary-fg-color--dark: #4d6a60;  /* 稍微偏暗的主色，用於陰影或深色邊界 */
-  --md-accent-fg-color: #6a887d;         /* 強調色一併設為相同色調（可依需求調整） */
+  --md-typeset-a-color: #2563EB !important;
+  --md-primary-fg-color: #3B82F6;
+  --md-primary-fg-color--light: #60A5FA; /* 偏亮的主色，用於 hover 等狀態 */
+  --md-primary-fg-color--dark: #2563EB;  /* 偏暗的主色，用於陰影或深色邊界 */
+  --md-accent-fg-color: #3B82F6;         /* 強調色一併設為相同色調（可依需求調整） */
 }
 
 /* 深色模式也同步主題色，避免切換配色時恢復預設藍色 */
 [data-md-color-scheme="slate"] {
-  --md-typeset-a-color: #507c6c !important;
-  --md-primary-fg-color: #6a887d;
-  --md-primary-fg-color--light: #8fb2a5;
-  --md-primary-fg-color--dark: #4d6a60;
-  --md-accent-fg-color: #6a887d;
+  --md-typeset-a-color: #60A5FA !important;
+  --md-primary-fg-color: #3B82F6;
+  --md-primary-fg-color--light: #93CFFF;
+  --md-primary-fg-color--dark: #2563EB;
+  --md-accent-fg-color: #60A5FA;
 }
 
 /* 全站基礎字體設定 */
@@ -115,25 +115,25 @@ body,
 
 /* 導航列背景色 */
 .md-header {
-  background-color: #6a887d !important;
+  background-color: #1E293B !important;
 }
 
 .md-tabs {
-  background-color: #6a887d !important;
+  background-color: #1E293B !important;
 }
 
 .md-nav__source {
-  background-color: #6a887d !important;
+  background-color: #1E293B !important;
 }
 
 .md-nav__item .md-nav__link--active, .md-nav__item .md-nav__link--active code,
 .md-nav__item--active>.md-nav__link {
-  color: #6a887d !important;
+  color: #3B82F6 !important;
 }
 
 /* 主要導覽（側邊/抽屜）背景，確保與主題色一致 */
 .md-nav--primary .md-nav__title {
-  background-color: #6a887d !important;
+  background-color: #1E293B !important;
 }
 
 /* 導航列字體 - 使用 Orbitron 科技感字體 */
