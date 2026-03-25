@@ -1,5 +1,4 @@
-# 使用 Service Mesh 增強 Gthulhu 服務之安全性
-
+# Hardening Gthulhu Network Security with Istio Ambient Mode
 ## 前言
 
 在 Gthulhu 架構中，scheduler / decision-maker 會接觸到核心排程資訊、節點程序狀態與控制面策略資料，權限明顯高於一般 Pod。這類元件一旦在 production 環境被入侵，攻擊者可利用橫向移動（lateral movement）逐步接近 MongoDB、Manager API 與節點關鍵服務，最終造成：

@@ -1,4 +1,6 @@
-# Strengthening Gthulhu Service Security with Service Mesh
+# Hardening Gthulhu Network Security with Istio Ambient Mode
+
+> A Traditional Chinese version of this document is available [here](./index.zh.md).
 
 ## Introduction
 
