@@ -21,6 +21,8 @@
 
 Gthulhu 是一個雲原生工作負載編排平台，提供細粒度的 Pod 層級排程可觀測性與自動擴縮容能力，無需修改核心或應用程式碼。
 
+<iframe width="560" height="315" src="https://www.youtube.com/embed/0n7i4RDSy90?si=r2kAHvF8e7WGTDEY" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
 ### 核心功能
 
 - **Pod 層級排程指標** — Gthulhu 使用 eBPF 掛鉤核心排程事件（`fentry`/`fexit`），收集每個 Process 的指標，包括自願/非自願上下文切換、CPU 時間、等待時間、運行次數和 CPU 遷移。這些指標在 Pod 層級聚合並透過 REST API 公開。
