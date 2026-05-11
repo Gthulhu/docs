@@ -1,396 +1,249 @@
 # 運作原理
 
-本頁面提供關於 Gthulhu 核心工作原理和技術架構的詳細資訊。
+Gthulhu 將 Kubernetes 工作負載意圖連接到 Linux 核心排程行為。系統分成兩層：
 
-## 整體架構
+- **Pod 排程可觀測性**：基礎功能，透過 eBPF monitor 收集排程指標，並匯出 Pod 層級 Prometheus 資料。
+- **自訂 CPU 排程**：進階功能，適用於支援 `sched_ext` 的 Linux 6.12+ 節點，透過使用者空間排程器與 BPF scheduler 套用優先級與時間片策略。
 
-Gthulhu 為雲原生生態系統提供可編排的分散式排程器解決方案。
-其架構由多個元件協同運作：
+兩層可以一起執行；若未配置 scheduler mode，Gthulhu 也可以只執行 monitor-only 模式。
+
+## 架構
 
 ```mermaid
 graph TB
     subgraph "控制平面"
-        U[使用者 / Web UI] -->|配置策略| M[Manager<br/>中央管理]
-        M -->|持久化| DB[(MongoDB)]
-        M -->|查詢 Pods| K8S[Kubernetes API<br/>Pod Informer]
+        U[使用者 / Web UI / CRD] --> M[Manager API]
+        M --> DB[(MongoDB)]
+        M --> K8S[Kubernetes API]
     end
 
-    M -->|分發排程意圖| DM1
-    M -->|分發排程意圖| DM2
-    M -->|分發排程意圖| DMN
+    M -->|排程意圖| DM1
+    M -->|排程意圖| DM2
+    M -->|Runtime config| DM1
+    M -->|Runtime config| DM2
 
     subgraph "節點 1"
-        DM1[Decision Maker] --> S1[Gthulhu 排程器<br/>sched_ext / eBPF]
+        DM1[Decision Maker] --> MON1[eBPF 指標收集器]
+        DM1 --> G1[Gthulhu Daemon]
+        G1 --> S1[sched_ext Scheduler]
+        MON1 --> P1[Prometheus /metrics]
     end
 
     subgraph "節點 2"
-        DM2[Decision Maker] --> S2[Gthulhu 排程器<br/>sched_ext / eBPF]
+        DM2[Decision Maker] --> MON2[eBPF 指標收集器]
+        DM2 --> G2[Gthulhu Daemon]
+        G2 --> S2[sched_ext Scheduler]
+        MON2 --> P2[Prometheus /metrics]
+    end
+```
+
+### Manager
+
+Manager 是面向使用者的控制平面服務。依目前 API server 實作，它負責：
+
+- 認證與 token 生命週期：`/api/v1/auth/login`、`/api/v1/auth/refresh`、`/api/v1/auth/logout`
+- RBAC 資源：使用者、角色與權限
+- 排程策略：`/api/v1/strategies`
+- 排程意圖：`/api/v1/intents/self`
+- 依節點查詢 Pod-to-PID：`/api/v1/nodes`、`/api/v1/nodes/:nodeID/pods/pids`
+- Pod 排程指標設定與 runtime values：`/api/v1/pod-scheduling-metrics`、`/api/v1/pod-scheduling-metrics/runtime`、`/api/v1/classify`
+- Scheduler runtime configuration：`/api/v1/scheduler/runtime-config/apply`、`/api/v1/scheduler/runtime-config/status`
+
+Manager 會將狀態持久化到 MongoDB，並透過 Kubernetes API 解析工作負載 selector。
+
+### Decision Maker
+
+Decision Maker 以每節點一個服務的形式運作。它接收 Manager 發出的叢集層級意圖，解析成節點本地 Process 資訊，並服務本地 scheduler 與 monitor。
+
+重要端點包含：
+
+- `POST /api/v1/intents` — 接收 Manager 發出的排程意圖
+- `GET /api/v1/scheduling/strategies` — 提供 PID 層級策略給本地 scheduler
+- `POST /api/v1/metrics` — 接收 Gthulhu daemon 上報的 scheduler BSS metrics
+- `GET /api/v1/pods/pids` — 回傳該節點的 Pod-to-PID mapping
+- `POST /api/v1/runtime-config` 與 `GET /api/v1/runtime-config` — 套用與查看 runtime daemon configuration
+- `POST /api/v1/auth/token` — 簽發 scheduler 對本地 API 呼叫使用的 token
+- `GET /metrics` — 暴露 Decision Maker 的 Prometheus metrics
+
+### Gthulhu Daemon
+
+Gthulhu 根目錄的 binary 可以執行 monitor、scheduler，或兩者同時執行：
+
+- **monitor** 由 `monitor.enabled` 啟用，是預設的基礎功能。
+- **scheduler** 在 `scheduler.mode` 設為 `gthulhu`、`simple` 或 `simple-fifo` 時啟用。
+- 若沒有設定 scheduler mode，daemon 會停留在 monitor-only 模式。
+
+## Pod 排程指標流程
+
+monitor 的設計不依賴 `sched_ext`。它會載入 `sched_monitor.bpf.o`，將 eBPF 程式掛到 scheduler tracepoints，讀取 BPF maps，將 PID 對應回 Kubernetes Pod，最後匯出 Pod 層級 metrics。
+
+```mermaid
+sequenceDiagram
+    participant C as PodSchedulingMetrics CRD
+    participant W as CRD Watcher
+    participant B as eBPF Monitor
+    participant P as Pod Mapper
+    participant M as Prometheus
+
+    C->>W: 依 namespace 與 labels 選擇 Pods
+    W->>P: 解析符合條件的 Pods 與 Processes
+    W->>B: 更新 monitored PID/TGID maps
+    B->>B: 追蹤 sched_switch 與 process_exit events
+    B->>P: 將 PIDs 對應回 Pods
+    B->>M: 在 /metrics 暴露 Pod metrics
+```
+
+collector 追蹤 runtime、wait time、自願/非自願上下文切換、run count、CPU migrations 等訊號。這些 metrics 可供 Prometheus、Grafana dashboard 與 KEDA-based scaling 使用。
+
+## 排程策略流程
+
+排程策略從 Kubernetes 工作負載層級開始，最後變成每個節點上的 PID 層級決策。
+
+```mermaid
+sequenceDiagram
+    participant U as 使用者 / Web UI
+    participant M as Manager
+    participant K as Kubernetes API
+    participant DM as Decision Maker
+    participant G as Gthulhu Scheduler
+    participant B as BPF Scheduler
+
+    U->>M: 建立包含 selectors 與 policy 的策略
+    M->>K: 查詢符合條件的 Pods
+    M->>DM: 分發排程意圖
+    DM->>DM: 將 Pods 解析成本地 PIDs
+
+    loop 每 api.interval 秒
+        G->>DM: 取得 PID 層級策略
+        DM->>G: 回傳 priority / execution_time / pid
     end
 
-    subgraph "節點 N"
-        DMN[Decision Maker] --> SN[Gthulhu 排程器<br/>sched_ext / eBPF]
-    end
+    G->>B: 帶著 CPU、vtime 與 slice 決策分派 tasks
 ```
 
-### 元件概覽
-
-#### 1. Manager（控制平面）
-
-[Manager](https://github.com/Gthulhu/api) 作為中央管理服務，負責：
-
-- 使用者認證與授權（JWT）
-- 角色與權限管理（RBAC）
-- 排程策略的 CRUD 操作
-- 通過 Kubernetes Informer 監控 Pod 狀態
-- 將排程意圖分發到各節點的 Decision Maker
-- 資料持久化至 MongoDB（`v1.0.0+` 使用 CRD 管理，請參考 [Deploying Gthulhu with Kubernetes](./k8s.md)）
-
-#### 2. Decision Maker（節點代理）
-
-[Decision Maker](https://github.com/Gthulhu/api) 以 Sidecar 的形式與 Gthulhu 排成器器共處，負責：
-
-- 接收來自 Manager 的排程意圖
-- 掃描 `/proc` 檔案系統以發現 Pod 進程
-- 將排程策略（基於標籤）轉換為具體的 PID 級別排程決策
-- 向本地 Gthulhu 排程器提供 PID 級別的策略
-- 收集 eBPF 排程器指標並通過 Prometheus 暴光
-
-#### 3. Gthulhu 排程器（sched_ext）
-
-[Gthulhu 排程器](https://github.com/Gthulhu/Gthulhu) 是運行在每個節點上的核心排程元件，採用雙元件設計：
-
-![](./assets/qumun.png)
-
-##### BPF Scheduler
-
-基於 Linux 核心的 sched_ext 框架實作的 BPF 排程器，負責低階排程功能，如任務佇列管理、CPU 選擇邏輯和執行排程。
-BPF 排程器通過 ring buffer 與 user ring buffer 兩種 eBPF Map 與使用者空間的 Gthulhu 排程器溝通。
-
-##### 使用者空間排程器
-
-使用 [qumun framework](https://github.com/Gthulhu/qumun) 開發的使用者空間排程器，它會接收來自 ring buffer eBPF Map 的待排程任務資訊，並根據排程策略進行決策。
-最後再將排程結果經過 user ring buffer eBPF Map 回傳給 BPF Scheduler。
-
-## 插件系統
-
-![](./assets/plugin.png)
-
-Gthulhu 支援基於 **工廠模式** 的插件化設計，通過插件註冊機制，允許開發者擴展和自定義排程策略。
-
-### 插件介面
-
-插件系統定義了兩個核心介面：
-
-- **`Sched`**：低階排程器操作（`DequeueTask`、`DefaultSelectCPU`、`GetNrQueued`）
-- **`CustomScheduler`**：每個排程器必須實現的插件級操作：
-    - `DrainQueuedTask` — 從 eBPF 排出排隊中的任務
-    - `SelectQueuedTask` — 從佇列中選擇一個任務
-    - `SelectCPU` — 為任務選擇合適的 CPU
-    - `DetermineTimeSlice` — 計算執行的時間片
-    - `GetPoolCount` — 取得調度池中的任務數量
-    - `SendMetrics` — 發送指標到監控系統
-    - `GetChangedStrategies` — 取得已變更的排程策略
-
-### 可用插件
-
-| 模式 | 說明 |
-|------|------|
-| `gthulhu` | 進階排程器，支援 API 整合、排程策略、JWT 認證和指標上報 |
-| `simple` | 簡易加權虛擬執行時間（vtime）排程器 |
-| `simple-fifo` | 簡易先進先出（FIFO）排程器 |
-
-### 插件註冊
-
-插件通過 Go 的 `init()` 機制使用工廠模式進行註冊：
-
-```go
-func init() {
-    plugin.RegisterNewPlugin("myplugin", func(ctx context.Context, config *plugin.SchedConfig) (plugin.CustomScheduler, error) {
-        return NewMyPlugin(config), nil
-    })
-}
-```
-
-## 排程器執行流程
-
-主排程迴圈按以下方式處理任務：
-
-```mermaid
-flowchart TD
-    A[啟動排程迴圈] --> B{檢查 context Done}
-    B -->|是| D[結束]
-    B -->|否| E[DrainQueuedTask]
-    E --> F[SelectQueuedTask]
-    F --> G{有可用任務？}
-    G -->|否| H[阻塞等待]
-    H --> B
-    G -->|是| J[建立 DispatchedTask]
-    J --> K[計算截止時間 / vtime]
-    K --> L[DetermineTimeSlice]
-    L --> M{有自定義執行時間？}
-    M -->|是| O[使用自定義時間片]
-    M -->|否| P[使用預設演算法]
-    O --> Q[SelectCPU]
-    P --> Q
-    Q --> R{CPU 選擇成功？}
-    R -->|否| B
-    R -->|是| U[DispatchTask]
-    U --> V{分派成功？}
-    V -->|否| B
-    V -->|是| X[NotifyComplete]
-    X --> B
-```
-
-## CPU 拓撲感知排程
-
-### 階層式 CPU 選擇
-
-```mermaid
-graph TB
-    A[任務需要 CPU] --> AA{僅允許單一 CPU?}
-    AA -->|是| AB[檢查 CPU 是否空閒]
-    AA -->|否| B{SMT 系統?}
-    
-    AB -->|空閒| AC[使用先前的 CPU]
-    AB -->|非空閒| AD[返回 EBUSY 失敗]
-    
-    B -->|是| C{先前 CPU 的核心完全空閒?}
-    B -->|否| G{先前 CPU 空閒?}
-    
-    C -->|是| D[使用先前的 CPU]
-    C -->|否| E{L2 快取中有完全空閒的 CPU?}
-    
-    E -->|是| F[使用相同 L2 快取中的 CPU]
-    E -->|否| H{L3 快取中有完全空閒的 CPU?}
-    
-    H -->|是| I[使用相同 L3 快取中的 CPU]
-    H -->|否| J{有任何完全空閒的核心?}
-    
-    J -->|是| K[使用任何完全空閒的核心]
-    J -->|否| G
-    
-    G -->|是| L[使用先前的 CPU]
-    G -->|否| M{L2 快取中有任何空閒的 CPU?}
-    
-    M -->|是| N[使用相同 L2 快取中的 CPU]
-    M -->|否| O{L3 快取中有任何空閒的 CPU?}
-    
-    O -->|是| P[使用相同 L3 快取中的 CPU]
-    O -->|否| Q{有任何空閒的 CPU?}
-    
-    Q -->|是| R[使用任何空閒的 CPU]
-    Q -->|否| S[返回 EBUSY]
-```
-
-## API 和排程策略設計
-
-Gthulhu 實現了靈活的機制，通過 RESTful API 介面動態調整排程行為。系統使用 Manager 和節點級 Decision Maker 的雙模式 API 架構。
-
-### API 架構
-
-```mermaid
-graph TB
-    A[使用者 / Web UI] -->|管理策略| B[Manager]
-    B -->|儲存| C[(MongoDB)]
-    B -->|查詢 Pods| D[Kubernetes API]
-    B -->|分發意圖| E[Decision Maker<br/>節點 1]
-    B -->|分發意圖| F[Decision Maker<br/>節點 N]
-    E -->|提供 PID 策略| G[Gthulhu 排程器]
-    F -->|提供 PID 策略| H[Gthulhu 排程器]
-    G -->|上報指標| E
-    H -->|上報指標| F
-```
-
-#### Manager 端點
-
-Manager 處理面向使用者的操作：
-
-- **POST /api/v1/auth/login**：使用者認證
-- **POST /api/v1/strategies**：建立排程策略
-- **GET /api/v1/strategies/self**：列出自己的策略
-- **GET /api/v1/intents/self**：列出排程意圖
-
-#### Decision Maker 端點
-
-Decision Maker 運行在每個節點上，與 Gthulhu 排程器互動：
-
-- **GET /api/v1/scheduling/strategies**：取得本地排程器的 PID 級別排程策略
-- **POST /api/v1/metrics**：接收排程器指標資料
-
-### 排程策略資料模型
-
-Decision Maker 層級的排程策略使用以下結構表示：
+PID 層級策略格式如下：
 
 ```json
 {
-  "success": true,
-  "scheduling": [
-    {
-      "priority": 1,
-      "execution_time": 20000000,
-      "pid": 12345
-    },
-    {
-      "priority": 0,
-      "execution_time": 10000000,
-      "pid": 67890
-    }
-  ]
+  "priority": 1,
+  "execution_time": 20000000,
+  "pid": 12345
 }
 ```
 
-排程策略的關鍵組件：
+- `priority` 大於 `0` 時，該 task 會獲得優先處理。
+- `execution_time` 代表自訂時間片，單位為奈秒。
+- `pid` 是套用策略的 Linux Process。
 
-1. **優先級** (`int`)：當大於 0 時，任務的虛擬執行時間設置為最小值，賦予其最高排程優先級
-2. **執行時間** (`uint64`)：任務的自定義時間片（以納秒為單位）
-3. **PID** (`int`)：策略適用的進程 ID
+## sched_ext Scheduler 內部設計
 
-!!! note
-    Kubernetes Pod 的標籤選擇器在 Manager/Decision Maker 層級處理。
-    Decision Maker 通過掃描 `/proc` 尋找匹配的 Pod 進程，將標籤選擇器解析為具體的 PID，然後再傳遞給排程器。
+進階 scheduler 分成 BPF 與 Go 兩部分：
 
-### 策略應用流程
+- `main.bpf.c` 實作低階 `sched_ext` hooks、dispatch queues、task maps、priority tracking 與 ring buffer communication。
+- `main.go` 載入設定、初始化 plugin、載入 `main.bpf.o`、attach scheduler、初始化 CPU topology domains，並執行 dispatch loop。
+- plugin layer 提供排程策略實作：`gthulhu`、`simple`、`simple-fifo`。
 
-```mermaid
-sequenceDiagram
-    participant M as Manager
-    participant DM as Decision Maker
-    participant S as Gthulhu 排程器
-    participant T as 任務池
-
-    M->>DM: 分發排程意圖
-    DM->>DM: 解析 Pod 標籤 → PIDs
-
-    loop 每隔 interval 秒
-        S->>DM: 取得 PID 級別策略
-        DM->>S: 返回策略列表
-        S->>S: 更新策略映射
-    end
-
-    Note over S,T: 任務排程期間
-    T->>S: 任務需要排程
-    S->>S: 檢查任務是否有自定義策略
-    S->>S: 如需要則應用優先級設置
-    S->>S: 如指定則應用自定義執行時間
-    S->>T: 根據應用的策略排程任務
-```
-
-### 認證與安全
-
-Gthulhu API 支援多種安全機制：
-
-- **JWT 認證**：排程器與 Decision Maker 之間基於 RSA 非對稱加密的 Token 認證
-- **雙向 TLS（mTLS）**：元件之間可選的雙向 TLS 安全通訊
-- **RBAC**：Manager 上的角色型存取控制用於使用者管理
-
-## 核心模式
-
-Gthulhu 支援實驗性的**核心模式**（Kernel Mode），排程決策完全在 BPF 空間中進行，無需使用者空間排程迴圈。在此模式下：
-
-- BPF 排程器直接在核心中處理任務分派
-- 使用者空間元件僅管理策略更新和監控
-- 策略變更通過 eBPF map 更新推送至 BPF 排程器（`UpdatePriorityTaskWithPrio`、`RemovePriorityTask`）
-
-此模式可通過避免每次排程決策的核心到使用者空間往返來降低延遲。
-
-```yaml
-scheduler:
-  kernel_mode: true   # 啟用核心模式排程
-```
-
-## BPF 和使用者空間通訊
-
-### 通訊機制
+### 使用者空間 Dispatch Loop
 
 ```mermaid
-sequenceDiagram
-    participant K as BPF（核心空間）
-    participant U as Go（使用者空間）
-    
-    K->>U: 通過 ring buffer 排入任務
-    U->>U: 排出排隊中的任務
-    U->>U: 選擇任務並決定時間片
-    U->>U: 選擇 CPU（拓撲感知）
-    U->>K: 通過 user ring buffer 分派任務
-    K->>K: 執行排程決策
-    
-    Note over K,U: 定期指標上報
-    U->>U: 收集 BSS 資料（nr_queued、nr_scheduled 等）
-    U-->>U: 發送指標到 API 伺服器
+flowchart TD
+    A[從 BPF ring buffer 排出 queued tasks] --> B[選擇 queued task]
+    B --> C{有 task?}
+    C -->|否| D[等待後重試]
+    C -->|是| E[建立 dispatched task]
+    E --> F[套用 priority / vtime]
+    F --> G[決定 time slice]
+    G --> H[依 topology hints 選擇 CPU]
+    H --> I{選到 CPU?}
+    I -->|否| D
+    I -->|是| J[透過 user ring buffer 送回決策]
+    J --> K[通知完成]
+    K --> A
 ```
 
-### 指標資料
+BPF 透過 ring buffer 將 tasks 排入使用者空間。Go 端排出 tasks，交給啟用中的 plugin 選擇工作、決定時間片、選擇 CPU，再透過 user ring buffer 回傳 dispatch decision。BPF 最後執行實際的 `sched_ext` dispatch。
 
-排程器收集並上報以下指標：
+### 優先級處理
 
-| 指標 | 說明 |
-|------|------|
-| `nr_queued` | 排程器中排隊的任務數 |
-| `nr_scheduled` | 已排程的任務數 |
-| `nr_running` | 當前正在運行的任務數 |
-| `nr_online_cpus` | 線上 CPU 數量 |
-| `nr_user_dispatches` | 使用者空間分派次數 |
-| `nr_kernel_dispatches` | 核心空間分派次數 |
-| `nr_cancel_dispatches` | 取消的分派次數 |
-| `nr_bounce_dispatches` | 反彈的分派次數 |
-| `nr_failed_dispatches` | 失敗的分派次數 |
-| `nr_sched_congested` | 排程器擁塞事件次數 |
+在 user-space scheduler mode 中，priority 透過將 dispatched task 的 virtual time 設為最小值來表達。BPF 會追蹤 priority tasks，並可將其插入 dispatch queue 前端或觸發 preemption 行為。
 
-## 配置
+在 kernel mode 中，每次 task 決策不再經過 user-space loop。Go process 會監看策略變更，並透過 `UpdatePriorityTaskWithPrio` 與 `RemovePriorityTask` 更新 BPF maps，讓 BPF 直接在核心空間 dispatch。
 
-Gthulhu 使用 YAML 配置檔案管理所有設定：
+## CPU 選擇
+
+Gthulhu 會在 attach scheduler 前初始化 CPU topology 與 cache domains。CPU 選擇偏好 locality 與 idle capacity：
+
+1. 如果前一次 CPU 允許且 idle，優先重用。
+2. 在 SMT 系統上，優先選擇 fully idle sibling/core。
+3. 優先選擇同一個 L2 或 L3 cache domain 的 CPU。
+4. 最後才選擇任意 idle CPU。
+5. 若沒有合適 CPU，回傳 busy。
+
+使用者空間 scheduler 提供 CPU hints，BPF 負責最後 dispatch 與 kick 行為。
+
+## Runtime Configuration
+
+daemon 會讀取 YAML 設定，也可以透過 Decision Maker 接收 runtime configuration。
 
 ```yaml
+monitor:
+  enabled: true
+  bpf_object_path: sched_monitor.bpf.o
+  collection_interval_sec: 10
+  monitor_all: false
+  stream_events: false
+  prometheus_port: 9090
+  enable_crd_watcher: true
+
 scheduler:
-  slice_ns_default: 20000000    # 預設時間片（20ms）
-  slice_ns_min: 1000000         # 最小時間片（1ms）
-  mode: gthulhu                 # 插件模式：gthulhu、simple、simple-fifo
-  kernel_mode: false            # 實驗性核心模式排程
-  max_time_watchdog: true       # 偵測排程停滯
+  slice_ns_default: 20000000
+  slice_ns_min: 1000000
+  mode: gthulhu
+  kernel_mode: false
+  max_time_watchdog: true
 
 api:
-  url: http://127.0.0.1:8080    # Decision Maker 端點
-  interval: 5                   # 策略取得間隔（秒）
-  public_key_path: ./config/jwt_public_key.pem
-  enabled: true                 # 啟用 API 通訊
-  auth_enabled: true            # 啟用 JWT 認證
-  mtls:
-    enable: false               # 啟用雙向 TLS
-    cert_pem: ""
-    key_pem: ""
-    ca_pem: ""
-
-debug: false                    # 啟用除錯模式（pprof 在 :6060）
-early_processing: false         # 在 BPF 中提前處理任務
-builtin_idle: false             # 在 BPF 中使用內建空閒 CPU 選擇
+  url: http://127.0.0.1:8080
+  interval: 5
+  public_key_path: ./api/config/jwt_public_key.pem
+  enabled: true
+  auth_enabled: true
 ```
 
-## 除錯和監控
+重要行為：
 
-### BPF 追蹤
+- `monitor.enabled` 控制基礎 eBPF metrics collector。
+- `scheduler.mode` 控制進階 scheduler 是否啟動。
+- `scheduler.kernel_mode` 啟用實驗性的 BPF-side dispatch。
+- `api.enabled` 控制是否與 Decision Maker 溝通。
+- `api.auth_enabled` 啟用 scheduler API calls 的 JWT authentication。
+- `api.mtls` 可啟用 scheduler 與 API server 之間的 mutual TLS。
+
+## Metrics
+
+Gthulhu 回報兩類 metrics：
+
+| 來源 | 範例 | 消費者 |
+|------|------|--------|
+| eBPF pod monitor | wait time、runtime、context switches、CPU migrations | Prometheus、Grafana、KEDA |
+| sched_ext BSS data | `nr_queued`、`nr_scheduled`、`nr_running`、dispatch counters、congestion counters | Decision Maker API 與 logs |
+
+scheduler 會定期從 BPF module 讀取 BSS data。若 API communication 已啟用，會將這些 metrics POST 給 Decision Maker。
+
+## 除錯
+
+開發或操作 scheduler 時常用的指令：
 
 ```bash
-# 監控 BPF 程式執行
+# 追蹤 BPF debug output
 sudo cat /sys/kernel/debug/tracing/trace_pipe
 
-# 檢查 BPF 統計資料
+# 檢查已載入的 BPF programs 與 maps
 sudo bpftool prog show
-sudo bpftool map dump name task_info_map
+sudo bpftool map show
+
+# 使用指定設定啟動 Gthulhu daemon
+sudo ./main scheduler -config config/config.yaml
 ```
 
-## 與 CFS 的差異
-
-| 功能 | CFS（完全公平排程器） | Gthulhu |
-|---------|----------------------------------|---------|
-| 排程策略 | 基於虛擬執行時間 | 虛擬執行時間 + 延遲優化 |
-| 任務分類 | 統一處理 | 自動分類優化 |
-| CPU 選擇 | 基本負載平衡 | 拓撲感知 + 快取親和性 |
-| 動態調整 | 有限 | 全面自適應調整 |
-| 可擴展性 | 核心內建 | 使用者空間可擴展（插件系統） |
-| 多節點 | 不適用 | 通過 Manager 實現分散式排程 |
-| 策略管理 | 靜態核心參數 | 動態 REST API + Kubernetes 整合 |
-
----
-
-!!! info "深入了解"
-    有關更多實現細節，請參閱 [API 參考](api-reference.md) 和源代碼註釋。
+若要部署 monitor-only 模式，可以省略 `scheduler.mode`，或在 runtime configuration 中將它設為空值。
