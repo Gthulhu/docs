@@ -10,6 +10,7 @@ nav:
     - Installation: installation.md
     - K8s Deployment: k8s.md
     - Configuring the scheduling policies: gui.md
+    - Loading sched_ext schedulers: scx-loader.md
     - Pod-Level Scheduling Metrics: pod-metrics.md
     - Working with multi-node cluster: multi-node.md
     - Debugging with gthulhu-cli: cli.md
@@ -79,6 +80,7 @@ plugins:
             Installation: 安裝
             K8s Deployment: K8s 部署
             Pod-Level Scheduling Metrics: Pod 級排程指標
+            Loading sched_ext schedulers: 載入 sched_ext 排程器
             How It Works: 運作原理
             Project Goals: 專案目標
             Development History: 開發歷史

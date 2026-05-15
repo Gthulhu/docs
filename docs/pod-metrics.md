@@ -14,8 +14,8 @@ graph LR
     B -->|poll every N seconds| C[Go Collector<br/>+ PodMapper]
     C -->|aggregate per-Pod| D[Prometheus /metrics]
     D --> E[Grafana Dashboard]
-    D --> F[KEDA Auto-Scaling]
-    C -->|query via API| G[Web GUI]
+    C -->|query via API| F[Web GUI]
+    C -->|EWMA + clustering| G[Adaptive Classification]
 ```
 
 1. **eBPF tracepoints** (`tp_btf/sched_switch`, `tp_btf/sched_process_exit`) capture per-PID scheduling events in the kernel.
@@ -186,50 +186,63 @@ increase(gthulhu_pod_cpu_time_nanoseconds_total[1h])
 topk(10, rate(gthulhu_pod_involuntary_ctx_switches_total[5m]))
 ```
 
-## KEDA Auto-Scaling Integration
+## Adaptive Classification
 
-Pod scheduling metrics can drive **KEDA-based auto-scaling**. When creating a metrics configuration (via GUI or CRD), enable the **Scaling** section:
+**Adaptive Classification** automatically identifies workload patterns and potential scheduling bottlenecks from each Pod's short-term and long-term scheduling behavior. It builds EWMA (exponentially weighted moving average) profiles from collected pod-level metrics, then uses adaptive clustering to label Pods with inferred workload types. This helps you decide whether to adjust CPU resources, priority, or NUMA placement.
 
-| Field | Description |
+On the **Pod Metrics** page, the **Adaptive Classification** table can be filtered by:
+
+| Filter | Description |
+|--------|-------------|
+| namespace | Show only Pods in the specified Kubernetes namespace. |
+| phase | Filter by classifier lifecycle phase, such as `stable` or `drifting`. |
+| type | Filter by inferred workload type, such as `cpu_heavy`. |
+
+The table columns are:
+
+| Column | Description |
+|--------|-------------|
+| NAMESPACE | Kubernetes namespace where the Pod runs. |
+| POD | Pod name. |
+| PHASE | Current lifecycle phase of the classifier. |
+| CURRENT TYPE | Workload labels inferred by the model. A Pod may have multiple labels. |
+| CONFIDENCE | How closely the Pod's short-term EWMA profile matches its assigned cluster center (0–100%). |
+| DRIFT | Offset score between the short-term and long-term EWMA profiles, used to detect behavior changes. |
+| ACTION | Scheduling adjustment recommendation generated from the classification result. |
+| DETAIL | Opens a side panel with classification details for the Pod. |
+
+### Classifier Phases
+
+| Phase | Description |
 |-------|-------------|
-| **Metric Name** | The Prometheus metric to use as trigger (e.g., `gthulhu_pod_voluntary_ctx_switches_total`) |
-| **Target Value** | Threshold value that triggers scaling |
-| **Scale Target Name** | Name of the Deployment/StatefulSet to scale |
-| **Scale Target Kind** | Resource kind (default: `Deployment`) |
-| **Min Replicas** | Minimum replica count |
-| **Max Replicas** | Maximum replica count |
-| **Cooldown (s)** | Cooldown period between scaling events (default: 300s) |
+| `cold_start` | Insufficient samples (fewer than 10), so no stable classification is produced yet. |
+| `warming_up` | Initial samples have been collected (about 10–30), and preliminary clustering is being built. |
+| `stable` | The model has converged, and classification results can be used as the primary signal. |
+| `drifting` | A workload behavior shift has been detected, and the system is observing whether it persists. |
+| `transitioning` | Drift has been confirmed, and the model is re-clustering or updating the classification. |
 
-Example CRD with scaling:
+### Workload Types
 
-```yaml
-apiVersion: gthulhu.io/v1alpha1
-kind: PodSchedulingMetrics
-metadata:
-  name: scale-on-ctx-switches
-  namespace: default
-spec:
-  labelSelectors:
-    - key: app
-      value: my-service
-  collectionIntervalSeconds: 10
-  enabled: true
-  metrics:
-    voluntaryCtxSwitches: true
-  scaling:
-    enabled: true
-    metricName: gthulhu_pod_voluntary_ctx_switches_total
-    targetValue: "1000"
-    scaleTargetRef:
-      apiVersion: apps/v1
-      kind: Deployment
-      name: my-service
-    minReplicaCount: 2
-    maxReplicaCount: 20
-    cooldownPeriod: 300
-```
+| Type | Basis |
+|------|-------|
+| `cpu_heavy` | High CPU time per scheduling run, likely a CPU-intensive workload. |
+| `interactive` | High voluntary context switch ratio, common in interactive or I/O-wait-heavy workloads. |
+| `needs_higher_priority` | High involuntary preemption, possibly caused by scheduling contention or insufficient priority. |
+| `cache_unfriendly` | Frequent cross-L3 cache migrations, which may reduce cache locality. |
+| `numa_unfriendly` | Frequent cross-NUMA-node migrations, which may increase memory access latency. |
+| `scheduling_latency` | High wait time relative to run count, indicating more visible scheduling latency. |
+| `balanced` | No dominant bottleneck signature; overall behavior is relatively balanced. |
 
-The scaling path is: **eBPF → Prometheus → Prometheus Adapter → KEDA ScaledObject → HPA → Pod replicas**.
+### Drift and Recommended Actions
+
+The drift score is the average deviation between short-term and long-term EWMA profiles, normalized by long-term variance. A score above `1.5` enters the `drifting` state; if the high offset continues for 3 consecutive periods, the classifier confirms `transitioning`, meaning the workload type may have changed.
+
+| Recommended Action | Description |
+|--------------------|-------------|
+| `increase_cpu_limit` | The Pod may be CPU-limited or CPU-starved; check CPU requests and limits. |
+| `pin_to_numa_node` | NUMA migration rate is high; evaluate NUMA binding or topology-aware placement. |
+| `raise_priority` | Involuntary preemption pressure is high; check priority and resource contention. |
+| `keep_current` / `no_action` | The Pod is stable or has no obvious bottleneck, so the current configuration can be kept. |
 
 ## Prerequisites
 
@@ -239,4 +252,3 @@ The scaling path is: **eBPF → Prometheus → Prometheus Adapter → KEDA Scale
 | Gthulhu Monitor | Deployed as a DaemonSet on each node |
 | Prometheus | For metric storage and querying |
 | Grafana | (Optional) For visualization |
-| KEDA | (Optional) For auto-scaling based on scheduling metrics |

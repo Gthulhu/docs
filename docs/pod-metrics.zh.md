@@ -14,8 +14,8 @@ graph LR
     B -->|每 N 秒輪詢| C[Go Collector<br/>+ PodMapper]
     C -->|聚合為 per-Pod| D[Prometheus /metrics]
     D --> E[Grafana 儀表板]
-    D --> F[KEDA 自動擴縮]
-    C -->|透過 API 查詢| G[Web GUI]
+    C -->|透過 API 查詢| F[Web GUI]
+    C -->|EWMA + 分群| G[Adaptive Classification]
 ```
 
 1. **eBPF tracepoints**（`tp_btf/sched_switch`、`tp_btf/sched_process_exit`）在核心層捕捉每個 PID 的排程事件。
@@ -186,50 +186,63 @@ increase(gthulhu_pod_cpu_time_nanoseconds_total[1h])
 topk(10, rate(gthulhu_pod_involuntary_ctx_switches_total[5m]))
 ```
 
-## KEDA 自動擴縮整合
+## Adaptive Classification
 
-Pod 層級排程指標可以驅動 **基於 KEDA 的自動擴縮**。在建立指標設定時（透過 GUI 或 CRD），啟用 **Scaling** 區塊：
+**Adaptive Classification** 會根據 Pod 的短期與長期排程行為，自動辨識工作負載型態與可能的排程瓶頸。它使用收集到的 Pod 層級指標建立 EWMA（指數加權移動平均）輪廓，並透過自適應分群模型將 Pod 標記為不同類型，協助您判斷是否需要調整 CPU、優先權或 NUMA 配置。
+
+在 **Pod Metrics** 頁面的 **Adaptive Classification** 表格中，您可以依以下條件篩選結果：
+
+| 篩選器 | 說明 |
+|--------|------|
+| namespace | 僅顯示指定 Kubernetes 命名空間中的 Pod。 |
+| phase | 依分類器生命週期階段篩選，例如 `stable` 或 `drifting`。 |
+| type | 依推論出的工作負載類型篩選，例如 `cpu_heavy`。 |
+
+表格欄位說明如下：
 
 | 欄位 | 說明 |
 |------|------|
-| **Metric Name** | 用作觸發器的 Prometheus 指標（例如 `gthulhu_pod_voluntary_ctx_switches_total`） |
-| **Target Value** | 觸發擴縮的閾值 |
-| **Scale Target Name** | 要擴縮的 Deployment/StatefulSet 名稱 |
-| **Scale Target Kind** | 資源種類（預設：`Deployment`） |
-| **Min Replicas** | 最小副本數 |
-| **Max Replicas** | 最大副本數 |
-| **Cooldown (s)** | 擴縮事件之間的冷卻期（預設：300 秒） |
+| NAMESPACE | Pod 所在的 Kubernetes 命名空間。 |
+| POD | Pod 名稱。 |
+| PHASE | 分類器目前的生命週期階段。 |
+| CURRENT TYPE | 模型推論出的工作負載標籤，可能同時有多個。 |
+| CONFIDENCE | Pod 的短期 EWMA 輪廓與所屬分群中心的接近程度（0–100%）。 |
+| DRIFT | 短期與長期 EWMA 輪廓的偏移分數，用於偵測行為變化。 |
+| ACTION | 根據分類結果產生的排程調整建議。 |
+| DETAIL | 開啟側邊面板檢視該 Pod 的分類細節。 |
 
-含擴縮設定的 CRD 範例：
+### 分類器階段
 
-```yaml
-apiVersion: gthulhu.io/v1alpha1
-kind: PodSchedulingMetrics
-metadata:
-  name: scale-on-ctx-switches
-  namespace: default
-spec:
-  labelSelectors:
-    - key: app
-      value: my-service
-  collectionIntervalSeconds: 10
-  enabled: true
-  metrics:
-    voluntaryCtxSwitches: true
-  scaling:
-    enabled: true
-    metricName: gthulhu_pod_voluntary_ctx_switches_total
-    targetValue: "1000"
-    scaleTargetRef:
-      apiVersion: apps/v1
-      kind: Deployment
-      name: my-service
-    minReplicaCount: 2
-    maxReplicaCount: 20
-    cooldownPeriod: 300
-```
+| 階段 | 說明 |
+|------|------|
+| `cold_start` | 樣本不足（少於 10 筆），暫不產生穩定分類。 |
+| `warming_up` | 已累積初步樣本（約 10–30 筆），正在建立初始分群。 |
+| `stable` | 模型已收斂，分類結果可作為主要判斷依據。 |
+| `drifting` | 偵測到工作負載行為偏移，系統正在觀察是否持續。 |
+| `transitioning` | 行為偏移已確認，模型正在重新分群或更新分類。 |
 
-擴縮路徑為：**eBPF → Prometheus → Prometheus Adapter → KEDA ScaledObject → HPA → Pod 副本數**。
+### 工作負載類型
+
+| 類型 | 判斷依據 |
+|------|----------|
+| `cpu_heavy` | 每次排程執行的 CPU 時間偏高，可能屬於 CPU 密集型工作負載。 |
+| `interactive` | 自願上下文切換比例高，常見於互動式或 I/O 等待較多的工作負載。 |
+| `needs_higher_priority` | 非自願搶佔偏高，可能受到排程競爭或優先權不足影響。 |
+| `cache_unfriendly` | 跨 L3 快取遷移頻繁，可能造成快取區域性下降。 |
+| `numa_unfriendly` | 跨 NUMA 節點遷移頻繁，可能造成記憶體存取延遲增加。 |
+| `scheduling_latency` | 等待時間相對於執行次數偏高，代表排程延遲較明顯。 |
+| `balanced` | 未呈現明顯瓶頸特徵，整體行為相對均衡。 |
+
+### Drift 與建議動作
+
+Drift 分數表示短期 EWMA 與長期 EWMA 的平均偏差，並以長期變異量標準化。當分數大於 `1.5` 時會進入 `drifting` 狀態；若連續 3 個週期維持高偏移，會確認為 `transitioning`，代表工作負載型態可能已改變。
+
+| 建議動作 | 說明 |
+|----------|------|
+| `increase_cpu_limit` | Pod 可能受 CPU 限制或 CPU 飢餓影響，建議檢查 CPU request/limit。 |
+| `pin_to_numa_node` | NUMA 遷移率偏高，建議評估 NUMA 綁定或拓撲感知配置。 |
+| `raise_priority` | 非自願搶佔壓力偏高，建議檢查優先權與資源競爭情況。 |
+| `keep_current` / `no_action` | Pod 行為穩定或無明顯瓶頸，可維持目前設定。 |
 
 ## 先決條件
 
@@ -239,4 +252,3 @@ spec:
 | Gthulhu Monitor | 以 DaemonSet 方式部署在每個節點上 |
 | Prometheus | 用於指標儲存與查詢 |
 | Grafana | （選用）用於視覺化 |
-| KEDA | （選用）基於排程指標的自動擴縮 |
