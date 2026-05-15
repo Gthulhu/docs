@@ -70,8 +70,8 @@ Important endpoints include:
 The root Gthulhu binary can run the monitor, the scheduler, or both:
 
 - The **monitor** is enabled by `monitor.enabled` and is the default base feature.
-- The **scheduler** is enabled when `scheduler.mode` is set to `gthulhu`, `simple`, or `simple-fifo`.
-- If no scheduler mode is configured, the daemon stays in monitor-only mode.
+- The **scheduler** is enabled when `scheduler.mode` is set to `gthulhu`, `simple`, or `scx`.
+- If `scheduler.mode` is set to `none`, the daemon stays in monitor-only mode.
 
 ## Pod Scheduling Metrics Flow
 
@@ -199,6 +199,7 @@ scheduler:
   slice_ns_default: 20000000
   slice_ns_min: 1000000
   mode: gthulhu
+  scheduler_name: ""
   kernel_mode: false
   max_time_watchdog: true
 
@@ -213,7 +214,8 @@ api:
 Important behavior:
 
 - `monitor.enabled` controls the base eBPF metrics collector.
-- `scheduler.mode` controls whether the advanced scheduler starts.
+- `scheduler.mode` controls which scheduler process the daemon supervises: `none`, `gthulhu`, `simple`, or `scx`.
+- `scheduler.scheduler_name` is required when `scheduler.mode` is `scx`; the daemon validates that `/gthulhu/<scheduler_name>` is an allowed executable before applying the runtime config.
 - `scheduler.kernel_mode` enables experimental BPF-side dispatch.
 - `api.enabled` controls communication with the Decision Maker.
 - `api.auth_enabled` enables JWT authentication for scheduler API calls.
@@ -246,4 +248,4 @@ sudo bpftool map show
 sudo ./main scheduler -config config/config.yaml
 ```
 
-For monitor-only deployments, omit `scheduler.mode` or set it to an empty value in the runtime configuration.
+For monitor-only deployments, set `scheduler.mode` to `none` in the runtime configuration. To use an upstream sched_ext scheduler, deploy the scx-flavored image and set `scheduler.mode: scx` with a bundled scheduler name such as `scx_bpfland` or `scx_cake`.
