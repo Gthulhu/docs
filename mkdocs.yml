@@ -21,7 +21,7 @@ nav:
     - Improving Network Performance with Custom eBPF-based Schedulers: https://free5gc.org/blog/20250726/index.en/
     - Implementing GTP-driven Automatic Scheduling Optimization with eBPF-based Scheduler: https://free5gc.org/blog/20251126/20251126/
     - Hardening Gthulhu Network Security with Istio Ambient Mode: istio.md
-
+  - Tutorials: https://killercoda.com/gthulhu
   - Demo: https://gthulhu.github.io/Gthulhu/
   - Mentioned: mentioned.md
   - Contributing: contributing.md
