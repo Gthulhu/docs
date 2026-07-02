@@ -7,6 +7,7 @@
 - 完成 Microk8s 的安裝與設定，並確保 `kubectl` 可正常使用。
 - 啟用 Microk8s 內建的 container registry，詳情請參考：[How to use the built-in registry](https://microk8s.io/docs/registry-built-in)。
 - 使用 `microk8s enable rbac` 啟用 Microk8s 的 RBAC 功能
+- 安裝 Helm 3，或使用 `microk8s enable helm3` 啟用 MicroK8s 的 Helm add-on。
 
 ## 建立 Gthulhu Docker 映像檔
 
