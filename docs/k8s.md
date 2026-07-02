@@ -6,7 +6,8 @@ This document explains how to deploy the Gthulhu scheduler and API server in a K
 
 - Complete the installation and setup of Microk8s, and ensure `kubectl` works properly.
 - Enable Microk8s' built-in container registry. For details, see: [How to use the built-in registry](https://microk8s.io/docs/registry-built-in).
-- Enable Microk8s RBAC functionality using `microk8s enable rbac`
+- Enable Microk8s RBAC functionality using `microk8s enable rbac`.
+- Install Helm 3, or enable the MicroK8s Helm add-on using `microk8s enable helm3`.
 
 ## Building Gthulhu Docker Images
 
