@@ -21,6 +21,7 @@ nav:
     - Improving Network Performance with Custom eBPF-based Schedulers: https://free5gc.org/blog/20250726/index.en/
     - Implementing GTP-driven Automatic Scheduling Optimization with eBPF-based Scheduler: https://free5gc.org/blog/20251126/20251126/
     - Hardening Gthulhu Network Security with Istio Ambient Mode: istio.md
+    - Keeping vLLM Fast Under CPU Pressure: https://vllm-project-github-9ojnpu1yg-simon-mos-projects.vercel.app/2026/08/07/vllm-gthulhu.html
   - Tutorials: https://killercoda.com/gthulhu
   - Demo: https://gthulhu.github.io/Gthulhu/
   - Mentioned: mentioned.md
