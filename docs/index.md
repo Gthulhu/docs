@@ -1,94 +1,122 @@
 <a href="https://landscape.cncf.io/?item=provisioning--automation-configuration--gthulhu" target="_blank"><img src="https://img.shields.io/badge/CNCF%20Landscape-5699C6?style=for-the-badge&logo=cncf&label=cncf" alt="cncf landscape" /></a>
-
 <a href="https://ebpf.io/applications/" target="_blank"><img src="https://img.shields.io/badge/eBPF%20Application%20Landscape-5699C6?style=for-the-badge&logo=ebpf&label=ebpf" alt="ebpf landscape" /></a>
 
 [![LFX Health Score](https://insights.linuxfoundation.org/api/badge/health-score?project=gthulhu)](https://insights.linuxfoundation.org/project/gthulhu)
 
 # Gthulhu
 
-Gthulhu helps platform teams understand, automate, and tune Linux scheduling for Kubernetes workloads.
+> **DRA chooses what and where; Gthulhu controls how it actually runs.**
 
-It starts with safe, pod-level scheduling observability powered by eBPF. From there, teams can connect those signals to Prometheus, Grafana, and KEDA for scaling decisions that reflect real scheduler pressure. On Linux 6.12+ clusters with `sched_ext`, Gthulhu can also apply workload-aware CPU scheduling policies at the kernel boundary.
+Gthulhu is a cloud-native runtime scheduling platform that connects Kubernetes workload intent to Linux task scheduling with eBPF and `sched_ext`.
+
+Kubernetes can admit a workload, place it on a node, and allocate devices/topology. Gthulhu focuses on the execution gap that follows: identify the Linux tasks that belong to the workload, apply bounded CPU scheduling policy, and verify whether the allocation is actually delivering the workload SLO.
 
 [Get Started](k8s.md){: .md-button .md-button--primary }
 [How It Works](how-it-works.md){: .md-button }
-[Share Your Case Study](https://docs.google.com/forms/d/e/1FAIpQLSeT9Ia1iigu45DDbPgfqijWIN7-Ewkm6-AbTc-HsjyHMvBjCA/viewform?usp=publish-editor){: .md-button }
+[Claim2Core Roadmap](claim2core.md){: .md-button }
 
-## Why Gthulhu?
+## Current Capabilities
 
-Kubernetes schedules pods onto nodes, but the Linux kernel still decides when each process runs on CPU. That last-mile behavior is often invisible, even when it is the reason a workload is waiting, migrating, or missing latency goals.
+- **Pod-level scheduling observability** with eBPF.
+- **Prometheus / Grafana / KEDA integration** for scheduler-aware operations and scaling.
+- **Distributed scheduling intent** through a Manager and per-node Decision Makers.
+- **Custom CPU scheduling** on Linux 6.12+ with `sched_ext`.
+- **TID-aware node-policy matching** so non-leader worker threads can be targeted directly.
+- **Explicit priority semantics** across user-space and kernel scheduler modes.
 
-Gthulhu closes that gap:
+## Claim2Core Direction
 
-- **See scheduling pressure** — collect per-process scheduler signals and aggregate them into pod-level metrics.
-- **Scale from scheduler reality** — feed Prometheus and KEDA with wait time, runtime, context switches, and CPU migration signals instead of relying only on CPU averages.
-- **Configure workloads declaratively** — select pods through the Web UI, REST API, or `PodSchedulingMetrics` CRD.
-- **Tune critical workloads** — apply priority and time-slice policies through `sched_ext` when supported by the node kernel.
-- **Operate across clusters** — use a Manager plus per-node Decision Makers to turn workload intent into node-local action.
+The next architecture step is to connect actual Kubernetes allocation to runtime task scheduling:
 
-## What You Can Do
+```text
+Kueue / Workload API
+        │ admission / quota
+        ▼
+kube-scheduler / DRA
+        │ Node + device + topology allocation
+        ▼
+Gthulhu Runtime Plane
+        │ ResourceClaim → Pod/cgroup → TGID/TID
+        ▼
+sched_ext + eBPF
+        │ runtime policy + verification
+        ▼
+Delivered workload SLO
+```
 
-### Observe Every Workload
+The critical correctness rule is:
 
-Gthulhu attaches eBPF programs to Linux scheduling events and turns raw process activity into Kubernetes-aware metrics. You can track whether a pod is waiting for CPU, moving across CPUs, or spending time in scheduler contention.
+- `ResourceSlice` is **inventory**.
+- `ResourceClaim.status.allocation` is the workload's **actual allocation**.
 
-### Automate Smarter Scaling
+Gthulhu should not reimplement kube-scheduler, DRA, or Kueue. It should consume their decisions and control Linux CPU execution **inside** the resource envelope established by Kubernetes/cgroups.
 
-Scheduling behavior is often a better scaling signal than coarse resource utilization. Gthulhu exports metrics to Prometheus so KEDA can scale workloads based on real pressure observed at the kernel level.
+Read [Claim2Core](claim2core.md) for the implementation phases and safety boundaries.
 
-### Apply Scheduling Intent
+## Why This Matters
 
-For advanced environments, Gthulhu lets teams define scheduling strategies for selected workloads. The Manager resolves Kubernetes intent, Decision Makers map it to node-local processes, and the scheduler applies policies such as priority and custom time slices.
+Allocated resources do not automatically become delivered performance. A workload may own a GPU or NIC while its host-side feeder, tokenizer, NCCL/RDMA progress, DPDK, or packet-processing threads are still delayed by CPU contention.
 
-### Keep the Kernel Untouched
+Gthulhu makes this gap observable and controllable.
 
-The base monitor runs with eBPF on BTF-enabled Linux kernels and does not require kernel patches. The optional scheduler uses Linux `sched_ext`, so teams can experiment with custom scheduling policies without maintaining a custom kernel.
+Immediate validation paths include:
+
+- **CPU DRA × Gthulhu × free5GC/UPF** for p99/p99.9 latency and jitter;
+- **GPU + RDMA + CPU DRA × phase-aware LLM scheduling** for TTFT, ITL, GPU idle, and communication progress.
 
 ## Architecture at a Glance
 
-```
+```text
 User / Web UI / CRD
         │
         ▼
-Manager API ───────▶ MongoDB
+Manager API ───────▶ MongoDB / Kubernetes API
         │
         ▼
 Decision Maker DaemonSet
         │
         ├── eBPF scheduling metrics collector ──▶ Prometheus / Grafana / KEDA
         │
-        └── sched_ext scheduler integration ───▶ Linux kernel scheduler path
+        └── task resolution / scheduling intent
+                         │
+                         ▼
+                   Gthulhu daemon
+                         │
+                         ▼
+                    sched_ext / BPF
+                         │
+                         ▼
+                   Linux scheduler
 ```
 
-The Manager owns users, RBAC, strategy APIs, and cluster-wide intent. Decision Makers run on each node, discover matching pod processes, expose node-local PID strategies, collect metrics, and forward runtime configuration to the local Gthulhu daemon. The daemon can run in monitor-only mode or enable the advanced scheduler when configured.
+## Recent Scheduler Semantics
 
-Read the full data flow in [How It Works](how-it-works.md).
+Node-policy matching is thread-aware. The Decision Maker scans `/proc/<tgid>/task/<tid>` so a policy can target a named non-leader worker thread rather than only the process leader.
+
+Priority handling is also explicit:
+
+- `Priority > 0` means boost;
+- `Priority == 0` is non-boosting;
+- user-space mode supports TID-first lookup with TGID fallback;
+- kernel mode does not insert non-boosting strategies into the priority BPF map, avoiding accidental priority-0 promotion.
+
+See [How It Works](how-it-works.md) for the details and current limitations.
 
 ## Demo
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/0n7i4RDSy90?si=r2kAHvF8e7WGTDEY" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-
 <iframe width="560" height="315" src="https://www.youtube.com/embed/Cyjrh9cW1a8?si=0TL20Cd084wEoEVv" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-
-<iframe width="560" height="315" src="https://www.youtube.com/embed/MfU64idQcHg?si=HAdQLQU1NaoQEbkf" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-
-## Latest News
-
-!!! success "Gthulhu joins CNCF Landscape"
-    Gthulhu is part of the [CNCF Landscape](https://landscape.cncf.io/?item=provisioning--automation-configuration--gthulhu), alongside cloud-native infrastructure projects.
-
-!!! success "Gthulhu joins eBPF Application Landscape"
-    Gthulhu is listed in the [eBPF Application Landscape](https://ebpf.io/applications/) as an eBPF-based scheduling and observability project.
 
 ## Next Steps
 
 - [Deploy Gthulhu with Kubernetes](k8s.md)
-- [Understand the architecture](how-it-works.md)
+- [Understand the architecture and current scheduler semantics](how-it-works.md)
+- [Read the Claim2Core roadmap](claim2core.md)
 - [Configure pod scheduling metrics](pod-metrics.md)
-- [Explore the API reference](api-reference.md)
+- [Contribute](contributing.md)
 
 ## Community
 
-- **GitHub**: [Gthulhu](https://github.com/Gthulhu/Gthulhu) | [Qumun](https://github.com/Gthulhu/scx_goland_core)
-- **Issues**: Report bugs or request features through GitHub Issues.
-- **License**: Apache License 2.0.
+- **GitHub**: [Gthulhu/Gthulhu](https://github.com/Gthulhu/Gthulhu)
+- **Roadmap**: [Issue #141](https://github.com/Gthulhu/Gthulhu/issues/141)
+- **Framework**: [Gthulhu/qumun](https://github.com/Gthulhu/qumun)
+- **License**: Apache License 2.0
