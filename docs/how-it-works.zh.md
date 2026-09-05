@@ -2,10 +2,10 @@
 
 Gthulhu 將 Kubernetes 工作負載意圖連接到 Linux 核心排程行為。系統分成兩層：
 
-- **Pod 排程可觀測性**：基礎功能，透過 eBPF monitor 收集排程指標，並匯出 Pod 層級 Prometheus 資料。
-- **自訂 CPU 排程**：進階功能，適用於支援 `sched_ext` 的 Linux 6.12+ 節點，透過使用者空間排程器與 BPF scheduler 套用優先級與時間片策略。
+- **Pod 排程可觀測性**：基礎功能，透過 eBPF monitor 收集排程指標並匯出 Pod 層級 Prometheus 資料。
+- **自訂 CPU 排程**：進階功能，適用於 Linux 6.12+ 與 `sched_ext`，由 user-space 或 kernel scheduler path 套用有邊界的 runtime scheduling policy。
 
-兩層可以一起執行；若未配置 scheduler mode，Gthulhu 也可以只執行 monitor-only 模式。
+兩層可以一起執行，也可以只執行 monitor-only 模式。
 
 ## 架構
 
@@ -19,8 +19,6 @@ graph TB
 
     M -->|排程意圖| DM1
     M -->|排程意圖| DM2
-    M -->|Runtime config| DM1
-    M -->|Runtime config| DM2
 
     subgraph "節點 1"
         DM1[Decision Maker] --> MON1[eBPF 指標收集器]
@@ -39,43 +37,24 @@ graph TB
 
 ### Manager
 
-Manager 是面向使用者的控制平面服務。依目前 API server 實作，它負責：
-
-- 認證與 token 生命週期：`/api/v1/auth/login`、`/api/v1/auth/refresh`、`/api/v1/auth/logout`
-- RBAC 資源：使用者、角色與權限
-- 排程策略：`/api/v1/strategies`
-- 排程意圖：`/api/v1/intents/self`
-- 依節點查詢 Pod-to-PID：`/api/v1/nodes`、`/api/v1/nodes/:nodeID/pods/pids`
-- Pod 排程指標設定與 runtime values：`/api/v1/pod-scheduling-metrics`、`/api/v1/pod-scheduling-metrics/runtime`、`/api/v1/classify`
-- Scheduler runtime configuration：`/api/v1/scheduler/runtime-config/apply`、`/api/v1/scheduler/runtime-config/status`
-
-Manager 會將狀態持久化到 MongoDB，並透過 Kubernetes API 解析工作負載 selector。
+Manager 負責 cluster-level intent 與 control-plane state，透過 Kubernetes API 解析 workload selector，並把 scheduling intent 分發到各節點 Decision Maker。
 
 ### Decision Maker
 
-Decision Maker 以每節點一個服務的形式運作。它接收 Manager 發出的叢集層級意圖，解析成節點本地 Process 資訊，並服務本地 scheduler 與 monitor。
+Decision Maker 每個 Node 一個。它把 cluster-level intent 解析成 node-local Linux task，提供 local scheduling strategies，並服務 monitor / scheduler path。
 
-重要端點包含：
+### Gthulhu daemon
 
-- `POST /api/v1/intents` — 接收 Manager 發出的排程意圖
-- `GET /api/v1/scheduling/strategies` — 提供 PID 層級策略給本地 scheduler
-- `POST /api/v1/metrics` — 接收 Gthulhu daemon 上報的 scheduler BSS metrics
-- `GET /api/v1/pods/pids` — 回傳該節點的 Pod-to-PID mapping
-- `POST /api/v1/runtime-config` 與 `GET /api/v1/runtime-config` — 套用與查看 runtime daemon configuration
-- `POST /api/v1/auth/token` — 簽發 scheduler 對本地 API 呼叫使用的 token
-- `GET /metrics` — 暴露 Decision Maker 的 Prometheus metrics
+Daemon 可以執行：
 
-### Gthulhu Daemon
-
-Gthulhu 根目錄的 binary 可以執行 monitor、scheduler，或兩者同時執行：
-
-- **monitor** 由 `monitor.enabled` 啟用，是預設的基礎功能。
-- **scheduler** 在 `scheduler.mode` 設為 `gthulhu`、`simple` 或 `scx` 時啟用。
-- 若 `scheduler.mode` 設為 `none`，daemon 會停留在 monitor-only 模式。
+- monitor-only；
+- user-space `sched_ext` scheduling；
+- experimental kernel-mode policy application；
+- 配置後的 upstream `scx` scheduler。
 
 ## Pod 排程指標流程
 
-monitor 的設計不依賴 `sched_ext`。它會載入 `sched_monitor.bpf.o`，將 eBPF 程式掛到 scheduler tracepoints，讀取 BPF maps，將 PID 對應回 Kubernetes Pod，最後匯出 Pod 層級 metrics。
+Monitor 不依賴 `sched_ext`。它將 eBPF 程式掛到 scheduler events，將 process/task activity 對應回 Kubernetes Pod，並匯出 runtime、wait time、context switch、run count、CPU migration 等 metrics。
 
 ```mermaid
 sequenceDiagram
@@ -86,18 +65,16 @@ sequenceDiagram
     participant M as Prometheus
 
     C->>W: 依 namespace 與 labels 選擇 Pods
-    W->>P: 解析符合條件的 Pods 與 Processes
-    W->>B: 更新 monitored PID/TGID maps
-    B->>B: 追蹤 sched_switch 與 process_exit events
-    B->>P: 將 PIDs 對應回 Pods
+    W->>P: 解析符合條件的 Pods / Processes
+    W->>B: 更新 monitored identities
+    B->>B: 追蹤 scheduler events
+    B->>P: 對應回 Pods
     B->>M: 在 /metrics 暴露 Pod metrics
 ```
 
-collector 追蹤 runtime、wait time、自願/非自願上下文切換、run count、CPU migrations 等訊號。這些 metrics 可供 Prometheus、Grafana dashboard 與 KEDA-based scaling 使用。
-
 ## 排程策略流程
 
-排程策略從 Kubernetes 工作負載層級開始，最後變成每個節點上的 PID 層級決策。
+Scheduling strategy 從 Kubernetes/workload intent 開始，最後落成 node-local task decision。
 
 ```mermaid
 sequenceDiagram
@@ -108,144 +85,169 @@ sequenceDiagram
     participant G as Gthulhu Scheduler
     participant B as BPF Scheduler
 
-    U->>M: 建立包含 selectors 與 policy 的策略
-    M->>K: 查詢符合條件的 Pods
-    M->>DM: 分發排程意圖
-    DM->>DM: 將 Pods 解析成本地 PIDs
+    U->>M: 建立 selector / policy
+    M->>K: 解析 workloads
+    M->>DM: 分發 scheduling intent
+    DM->>DM: 解析本地 process/task identity
 
     loop 每 api.interval 秒
-        G->>DM: 取得 PID 層級策略
-        DM->>G: 回傳 priority / execution_time / pid
+        G->>DM: 取得 node-local strategies
+        DM->>G: 回傳 priority / execution_time / task id
     end
 
-    G->>B: 帶著 CPU、vtime 與 slice 決策分派 tasks
+    G->>B: 套用 scheduling decision
 ```
 
-PID 層級策略格式如下：
+## TID-aware Node Policy Matching
 
-```json
-{
-  "priority": 1,
-  "execution_time": 20000000,
-  "pid": 12345
-}
+Linux 排的是 **task/thread**，不是只排 thread-group leader。因此 node policy 會掃描：
+
+```text
+/proc/<tgid>/task/<tid>
 ```
 
-- `priority` 大於 `0` 時，該 task 會獲得優先處理。
-- `execution_time` 代表自訂時間片，單位為奈秒。
-- `pid` 是套用策略的 Linux Process。
+並獨立比對每個 thread 的 `comm`。
+
+例如：
+
+```text
+/proc/3785998/comm               = python3.12
+/proc/3785998/task/3786004/comm = EngineCore_DP0
+/proc/3785998/task/3786005/comm = EngineCore_DP1
+```
+
+即使 process leader 名稱是 `python3.12`，`^EngineCore(_DP[0-9]+)?$` 仍可以直接命中兩個 worker threads。
+
+解析後的 strategy key 是被命中 worker 的 **TID**，也就是 Linux 真正 dispatch 的 entity。
+
+這個行為來自已合併的 `Gthulhu/Gthulhu#135`。
+
+## TID-first Lookup 與 TGID Fallback
+
+User-space scheduling plugin 現在使用一致的 lookup semantics：
+
+1. 先找 exact **TID** match；
+2. 沒有 TID-specific strategy 才 fallback 到 **TGID**。
+
+因此：
+
+- node policy 可以只命中單一 worker thread；
+- Pod-level policy 仍可透過 TGID 對整個 thread group 生效；
+- 當 TID 與 TGID rule 同時存在時，TID-specific rule 優先。
+
+這個行為來自已合併的 `Gthulhu/plugin#17`。
+
+### 目前限制
+
+Strategy map 仍以 bare numeric ID 為 key。如果 target 本身就是 group leader（`TID == TGID`），sibling thread 可能透過 TGID fallback 讀到同一筆 entry。後續應讓 strategy shape 保留它原本是 task-specific 還是 group-wide。
+
+## Priority 與 Time-slice Semantics
+
+目前語意是：
+
+- `Priority > 0` = **boosting strategy**；
+- `Priority == 0` = **non-boosting strategy**；
+- `execution_time` = scheduler path 支援時使用的 custom time slice，單位 ns。
+
+### User-space mode
+
+`Priority == 0` 不會跳到 run queue 前面，但仍可攜帶 custom time slice。
+
+`Priority > 0` 才會在 user-space scheduler dispatch ordering 中獲得 priority treatment。
+
+### Kernel mode
+
+Kernel mode 直接使用 BPF priority state。底層 priority map 將數值 `0` 解讀成最高 / preemptive priority，因此 Gthulhu **不能**把 non-boosting `Priority == 0` strategy 插進這個 map。
+
+已合併的 `Gthulhu/Gthulhu#137` 因此會在 kernel-mode priority apply 時跳過 `Priority <= 0`，並移除該 task 可能殘留的 stale priority entry。
+
+!!! warning "Kernel mode 的 slice-only parity"
+    Kernel mode 目前沒有獨立的「normal priority + custom slice」state。因此 slice-only (`Priority == 0`) strategy 在 kernel mode 目前是無效果，而不是被錯誤提升成最高 priority。要做到完整 parity，之後需要修改 qumun/BPF state model。
 
 ## sched_ext Scheduler 內部設計
 
-進階 scheduler 分成 BPF 與 Go 兩部分：
+進階 scheduler 由 Go 與 BPF 共同構成：
 
-- `main.bpf.c` 實作低階 `sched_ext` hooks、dispatch queues、task maps、priority tracking 與 ring buffer communication。
-- `main.go` 載入設定、初始化 plugin、載入 `main.bpf.o`、attach scheduler、初始化 CPU topology domains，並執行 dispatch loop。
-- plugin layer 提供排程策略實作：`gthulhu`、`simple`、`simple-fifo`。
-
-### 使用者空間 Dispatch Loop
-
-```mermaid
-flowchart TD
-    A[從 BPF ring buffer 排出 queued tasks] --> B[選擇 queued task]
-    B --> C{有 task?}
-    C -->|否| D[等待後重試]
-    C -->|是| E[建立 dispatched task]
-    E --> F[套用 priority / vtime]
-    F --> G[決定 time slice]
-    G --> H[依 topology hints 選擇 CPU]
-    H --> I{選到 CPU?}
-    I -->|否| D
-    I -->|是| J[透過 user ring buffer 送回決策]
-    J --> K[通知完成]
-    K --> A
-```
-
-BPF 透過 ring buffer 將 tasks 排入使用者空間。Go 端排出 tasks，交給啟用中的 plugin 選擇工作、決定時間片、選擇 CPU，再透過 user ring buffer 回傳 dispatch decision。BPF 最後執行實際的 `sched_ext` dispatch。
-
-### 優先級處理
-
-在 user-space scheduler mode 中，priority 透過將 dispatched task 的 virtual time 設為最小值來表達。BPF 會追蹤 priority tasks，並可將其插入 dispatch queue 前端或觸發 preemption 行為。
-
-在 kernel mode 中，每次 task 決策不再經過 user-space loop。Go process 會監看策略變更，並透過 `UpdatePriorityTaskWithPrio` 與 `RemovePriorityTask` 更新 BPF maps，讓 BPF 直接在核心空間 dispatch。
+- BPF 實作 `sched_ext` hooks、dispatch queues、task maps、priority state 與 ring-buffer communication。
+- Go 載入設定、初始化 scheduler/plugin、attach scheduler，並處理 control-plane updates。
+- User-space mode 由 Go/plugin 選 task，透過 ring buffer 回傳 dispatch decision。
+- Kernel mode 對 priority path 省略逐 task 的 user-space selection，直接更新 BPF state。
 
 ## CPU 選擇
 
-Gthulhu 會在 attach scheduler 前初始化 CPU topology 與 cache domains。CPU 選擇偏好 locality 與 idle capacity：
+Gthulhu user-space scheduler 的 CPU selection 偏好 locality 與 idle capacity：
 
-1. 如果前一次 CPU 允許且 idle，優先重用。
-2. 在 SMT 系統上，優先選擇 fully idle sibling/core。
-3. 優先選擇同一個 L2 或 L3 cache domain 的 CPU。
-4. 最後才選擇任意 idle CPU。
-5. 若沒有合適 CPU，回傳 busy。
+1. 前一次 CPU 仍可用且 idle 時優先重用；
+2. SMT 系統優先 fully idle sibling/core；
+3. 優先同一 L2/L3 cache domain；
+4. fallback 到其他 idle CPU；
+5. 沒有適合 CPU 時回報 busy。
 
-使用者空間 scheduler 提供 CPU hints，BPF 負責最後 dispatch 與 kick 行為。
+## Claim2Core：下一階段架構
+
+下一步是消費 Kubernetes 的 actual allocation，將它編譯成安全的 runtime execution plan。
+
+```text
+ResourceClaim allocation
+  → Pod / cgroup
+  → TGID / TID / starttime
+  → proposed execution class
+  → sched_ext / BPF state
+  → runtime metrics / workload SLO
+```
+
+重要邊界：
+
+- `ResourceSlice` 描述 **inventory**，不能證明 workload 已取得 device。
+- `ResourceClaim.status.allocation` 才是 DRA actual allocation 的 source of truth。
+- Kubernetes API object 應存在 control/update path，不能放進微秒級 scheduler hot path。
+- cgroup / allocated CPU boundary 是硬邊界，Gthulhu 不得把 task 移出允許集合。
+- Gthulhu 排的是 Linux CPU task，不是 CUDA kernel、GPU SM、MIG 或 NIC hardware queue。
+
+完整 roadmap 請看 [Claim2Core](claim2core.md)。
 
 ## Runtime Configuration
 
-daemon 會讀取 YAML 設定，也可以透過 Decision Maker 接收 runtime configuration。
+典型設定：
 
 ```yaml
 monitor:
   enabled: true
-  bpf_object_path: sched_monitor.bpf.o
   collection_interval_sec: 10
-  monitor_all: false
-  stream_events: false
-  prometheus_port: 9090
-  enable_crd_watcher: true
 
 scheduler:
   slice_ns_default: 20000000
   slice_ns_min: 1000000
   mode: gthulhu
-  scheduler_name: ""
   kernel_mode: false
-  max_time_watchdog: true
 
 api:
   url: http://127.0.0.1:8080
   interval: 5
-  public_key_path: ./api/config/jwt_public_key.pem
   enabled: true
   auth_enabled: true
 ```
 
-重要行為：
+重點：
 
-- `monitor.enabled` 控制基礎 eBPF metrics collector。
-- `scheduler.mode` 控制 daemon 要監督哪一種 scheduler process：`none`、`gthulhu`、`simple` 或 `scx`。
-- `scheduler.scheduler_name` 在 `scheduler.mode` 為 `scx` 時必填；daemon 會在套用 runtime config 前確認 `/gthulhu/<scheduler_name>` 是允許且可執行的 binary。
-- `scheduler.kernel_mode` 啟用實驗性的 BPF-side dispatch。
+- `monitor.enabled` 控制 eBPF metrics collector；
+- `scheduler.mode` 控制 monitor-only / Gthulhu / upstream scx 行為；
+- `scheduler.kernel_mode` 啟用 experimental BPF-side priority path；
 - `api.enabled` 控制是否與 Decision Maker 溝通。
-- `api.auth_enabled` 啟用 scheduler API calls 的 JWT authentication。
-- `api.mtls` 可啟用 scheduler 與 API server 之間的 mutual TLS。
-
-## Metrics
-
-Gthulhu 回報兩類 metrics：
-
-| 來源 | 範例 | 消費者 |
-|------|------|--------|
-| eBPF pod monitor | wait time、runtime、context switches、CPU migrations | Prometheus、Grafana、KEDA |
-| sched_ext BSS data | `nr_queued`、`nr_scheduled`、`nr_running`、dispatch counters、congestion counters | Decision Maker API 與 logs |
-
-scheduler 會定期從 BPF module 讀取 BSS data。若 API communication 已啟用，會將這些 metrics POST 給 Decision Maker。
 
 ## 除錯
 
-開發或操作 scheduler 時常用的指令：
-
 ```bash
-# 追蹤 BPF debug output
-sudo cat /sys/kernel/debug/tracing/trace_pipe
-
-# 檢查已載入的 BPF programs 與 maps
 sudo bpftool prog show
 sudo bpftool map show
-
-# 使用指定設定啟動 Gthulhu daemon
-sudo ./main scheduler -config config/config.yaml
+sudo cat /sys/kernel/debug/tracing/trace_pipe
 ```
 
-若要部署 monitor-only 模式，請在 runtime configuration 中將 `scheduler.mode` 設為 `none`。若要使用 upstream sched_ext scheduler，請部署 scx-flavored image，並設定 `scheduler.mode: scx` 與 image 內建的 scheduler name，例如 `scx_bpfland` 或 `scx_cake`。
+排查 policy application 時，務必區分：
+
+- TGID vs TID；
+- user-space vs kernel mode；
+- boosting vs non-boosting strategy；
+- intended strategy vs actual BPF state。
+
+`Gthulhu/Gthulhu#134` 規劃中的 preview/provenance 功能，就是要讓這些差異可以被直接觀測與驗證。
