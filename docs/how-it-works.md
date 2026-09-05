@@ -1,11 +1,11 @@
 # How It Works
 
-Gthulhu connects Kubernetes workload intent with Linux scheduler behavior. It has two layers:
+Gthulhu connects Kubernetes workload intent to Linux scheduler behavior. It has two layers:
 
 - **Pod scheduling observability**: the base feature, powered by an eBPF monitor that collects scheduler metrics and exports pod-level Prometheus data.
-- **Custom CPU scheduling**: an advanced feature for Linux 6.12+ with `sched_ext`, where Gthulhu applies priority and time-slice policies through a user-space scheduler and BPF scheduler program.
+- **Custom CPU scheduling**: an advanced feature for Linux 6.12+ with `sched_ext`, where Gthulhu applies bounded scheduling policies through a user-space or kernel scheduler path.
 
-The two layers can run together, or Gthulhu can run in monitor-only mode when no scheduler mode is configured.
+The two layers can run together, or Gthulhu can run in monitor-only mode.
 
 ## Architecture
 
@@ -19,8 +19,6 @@ graph TB
 
     M -->|Scheduling intents| DM1
     M -->|Scheduling intents| DM2
-    M -->|Runtime config| DM1
-    M -->|Runtime config| DM2
 
     subgraph "Node 1"
         DM1[Decision Maker] --> MON1[eBPF Metrics Collector]
@@ -39,43 +37,24 @@ graph TB
 
 ### Manager
 
-The Manager is the user-facing control plane service. In the current API server implementation it handles:
-
-- Authentication and token lifecycle: `/api/v1/auth/login`, `/api/v1/auth/refresh`, `/api/v1/auth/logout`
-- RBAC resources: users, roles, and permissions
-- Scheduling strategies: `/api/v1/strategies`
-- Scheduling intents: `/api/v1/intents/self`
-- Pod-to-PID visibility by node: `/api/v1/nodes`, `/api/v1/nodes/:nodeID/pods/pids`
-- Pod scheduling metrics configuration and runtime values: `/api/v1/pod-scheduling-metrics`, `/api/v1/pod-scheduling-metrics/runtime`, `/api/v1/classify`
-- Scheduler runtime configuration: `/api/v1/scheduler/runtime-config/apply`, `/api/v1/scheduler/runtime-config/status`
-
-The Manager persists state in MongoDB and uses Kubernetes APIs to resolve workload selectors.
+The Manager owns cluster-level intent and persistent control-plane state. It resolves workload selectors through Kubernetes APIs and distributes scheduling intent to Decision Makers.
 
 ### Decision Maker
 
-The Decision Maker runs per node. It receives cluster-level intent from the Manager, resolves it into node-local process information, and serves the local scheduler and monitor.
+A Decision Maker runs on each node. It resolves cluster-level intent into node-local Linux tasks, exposes local scheduling strategies, and serves the monitor/scheduler path.
 
-Important endpoints include:
+### Gthulhu daemon
 
-- `POST /api/v1/intents` — receive scheduling intents from the Manager
-- `GET /api/v1/scheduling/strategies` — expose PID-level strategies to the local scheduler
-- `POST /api/v1/metrics` — receive scheduler BSS metrics from the Gthulhu daemon
-- `GET /api/v1/pods/pids` — return pod-to-PID mappings for the node
-- `POST /api/v1/runtime-config` and `GET /api/v1/runtime-config` — apply and inspect runtime daemon configuration
-- `POST /api/v1/auth/token` — issue the scheduler token used for authenticated local API calls
-- `GET /metrics` — expose Decision Maker Prometheus metrics
+The daemon can run:
 
-### Gthulhu Daemon
-
-The root Gthulhu binary can run the monitor, the scheduler, or both:
-
-- The **monitor** is enabled by `monitor.enabled` and is the default base feature.
-- The **scheduler** is enabled when `scheduler.mode` is set to `gthulhu`, `simple`, or `scx`.
-- If `scheduler.mode` is set to `none`, the daemon stays in monitor-only mode.
+- monitor-only;
+- user-space `sched_ext` scheduling;
+- experimental kernel-mode policy application;
+- selected upstream `scx` schedulers where configured.
 
 ## Pod Scheduling Metrics Flow
 
-The monitor is designed to work without `sched_ext`. It loads `sched_monitor.bpf.o`, attaches eBPF programs to scheduler tracepoints, reads BPF maps, maps PIDs to Kubernetes pods, and exports pod-level metrics.
+The monitor does not require `sched_ext`. It attaches eBPF programs to scheduler events, maps process/task activity back to Kubernetes Pods, and exports metrics such as runtime, wait time, context switches, run count, and CPU migrations.
 
 ```mermaid
 sequenceDiagram
@@ -86,18 +65,16 @@ sequenceDiagram
     participant M as Prometheus
 
     C->>W: Select pods by namespace and labels
-    W->>P: Resolve matching pods and processes
-    W->>B: Update monitored PID/TGID maps
-    B->>B: Track sched_switch and process_exit events
-    B->>P: Map PIDs back to pods
+    W->>P: Resolve matching pods/processes
+    W->>B: Update monitored identities
+    B->>B: Track scheduler events
+    B->>P: Map activity back to pods
     B->>M: Expose pod metrics on /metrics
 ```
 
-The collector tracks signals such as runtime, wait time, voluntary and involuntary context switches, run count, and CPU migrations. These metrics can be consumed by Prometheus, Grafana dashboards, and KEDA-based scaling.
-
 ## Scheduling Strategy Flow
 
-Scheduling strategies start at the Kubernetes workload level and end as PID-level decisions on each node.
+Scheduling strategies start at Kubernetes/workload intent and end as node-local task decisions.
 
 ```mermaid
 sequenceDiagram
@@ -108,144 +85,169 @@ sequenceDiagram
     participant G as Gthulhu Scheduler
     participant B as BPF Scheduler
 
-    U->>M: Create strategy with selectors and policy
-    M->>K: Query matching pods
-    M->>DM: Distribute scheduling intents
-    DM->>DM: Resolve pods into local PIDs
+    U->>M: Create strategy with selectors/policy
+    M->>K: Resolve workloads
+    M->>DM: Distribute scheduling intent
+    DM->>DM: Resolve local process/task identities
 
     loop Every api.interval seconds
-        G->>DM: Fetch PID-level strategies
-        DM->>G: Return priority / execution_time / pid
+        G->>DM: Fetch node-local strategies
+        DM->>G: Return priority / execution_time / task id
     end
 
-    G->>B: Dispatch tasks with selected CPU, vtime, and slice
+    G->>B: Apply scheduling decision
 ```
 
-A PID-level strategy contains:
+## TID-aware Node Policy Matching
 
-```json
-{
-  "priority": 1,
-  "execution_time": 20000000,
-  "pid": 12345
-}
+Linux schedules **tasks/threads**, not just thread-group leaders. Node policies therefore scan:
+
+```text
+/proc/<tgid>/task/<tid>
 ```
 
-- `priority` greater than `0` gives the task priority treatment.
-- `execution_time` sets a custom time slice in nanoseconds.
-- `pid` identifies the Linux process that receives the policy.
+and match each thread's `comm` independently.
+
+For example:
+
+```text
+/proc/3785998/comm               = python3.12
+/proc/3785998/task/3786004/comm = EngineCore_DP0
+/proc/3785998/task/3786005/comm = EngineCore_DP1
+```
+
+A node policy matching `^EngineCore(_DP[0-9]+)?$` can target the two worker threads directly even though the process leader is named `python3.12`.
+
+The resolved strategy key is the **TID** of the matched worker. This is the entity Linux actually dispatches.
+
+This behavior was introduced by the merged thread-aware Decision Maker work in `Gthulhu/Gthulhu#135`.
+
+## TID-first Lookup with TGID Fallback
+
+In the user-space scheduling plugin, strategy lookup is now consistent:
+
+1. prefer an exact **TID** match;
+2. if no TID-specific strategy exists, fall back to the **TGID**.
+
+This allows:
+
+- a node policy to target one specific worker thread;
+- a Pod-level policy keyed by the group leader to still apply across the thread group;
+- a TID-specific rule to win when both exist.
+
+This behavior was introduced by the merged `Gthulhu/plugin#17` change.
+
+### Current limitation
+
+The strategy map is still keyed by a bare numeric ID. If a TID-specific target is itself the group leader (`TID == TGID`), sibling threads may resolve the same entry through TGID fallback. A future strategy shape should preserve whether the original match was task-specific or group-wide.
+
+## Priority and Time-slice Semantics
+
+The current intended semantics are:
+
+- `Priority > 0` = **boosting strategy**;
+- `Priority == 0` = **non-boosting strategy**;
+- `execution_time` = custom time slice in nanoseconds where the scheduler path supports it.
+
+### User-space mode
+
+A `Priority == 0` strategy does **not** jump the run queue. It may still carry a custom time slice.
+
+A `Priority > 0` strategy receives priority treatment through the user-space scheduler's dispatch ordering.
+
+### Kernel mode
+
+Kernel mode uses BPF priority state directly. Because the underlying priority map treats numeric priority `0` as the highest/preemptive level, Gthulhu must **not** insert a non-boosting `Priority == 0` strategy into that map.
+
+The merged `Gthulhu/Gthulhu#137` fix therefore skips `Priority <= 0` when applying kernel-mode priority state and removes any stale priority entry for that task.
+
+!!! warning "Kernel-mode slice-only parity"
+    Kernel mode currently has no separate "custom slice at normal priority" state. Therefore a slice-only (`Priority == 0`) strategy has no scheduling effect in kernel mode instead of being incorrectly promoted. Full parity requires a future qumun/BPF state change.
 
 ## sched_ext Scheduler Internals
 
-The advanced scheduler is split between BPF and Go:
+The advanced scheduler is split between Go and BPF:
 
-- `main.bpf.c` implements the low-level `sched_ext` hooks, dispatch queues, task maps, priority tracking, and ring buffer communication.
-- `main.go` loads configuration, initializes the plugin, loads `main.bpf.o`, attaches the scheduler, initializes CPU topology domains, and runs the dispatch loop.
-- The plugin layer provides scheduling policy implementations: `gthulhu`, `simple`, and `simple-fifo`.
-
-### User-Space Dispatch Loop
-
-```mermaid
-flowchart TD
-    A[Drain queued tasks from BPF ring buffer] --> B[Select queued task]
-    B --> C{Task available?}
-    C -->|No| D[Wait and retry]
-    C -->|Yes| E[Build dispatched task]
-    E --> F[Apply priority / vtime]
-    F --> G[Determine time slice]
-    G --> H[Select CPU with topology hints]
-    H --> I{CPU selected?}
-    I -->|No| D
-    I -->|Yes| J[Send decision through user ring buffer]
-    J --> K[Notify completion]
-    K --> A
-```
-
-BPF enqueues tasks to user space through a ring buffer. Go drains the queued tasks, asks the active plugin to select work, determines the time slice, picks a CPU, and returns a dispatch decision through the user ring buffer. BPF then performs the final `sched_ext` dispatch.
-
-### Priority Handling
-
-In user-space scheduler mode, priority is represented by setting a dispatched task's virtual time to the minimum value. BPF tracks priority tasks and can insert them at the head of the dispatch queue or trigger preemption behavior.
-
-In kernel mode, the user-space loop is bypassed for per-task decisions. The Go process watches strategy changes and updates BPF maps through `UpdatePriorityTaskWithPrio` and `RemovePriorityTask`, allowing BPF to dispatch directly in kernel space.
+- BPF implements `sched_ext` hooks, dispatch queues, task maps, priority state, and ring-buffer communication.
+- Go loads configuration, initializes the active scheduler/plugin, attaches the scheduler, and handles control-plane updates.
+- User-space mode selects tasks and returns dispatch decisions through ring buffers.
+- Kernel mode bypasses per-task user-space selection for the priority path and updates BPF state directly.
 
 ## CPU Selection
 
-Gthulhu initializes CPU topology and cache domains before attaching the scheduler. CPU selection prefers locality and idle capacity:
+When using the Gthulhu user-space scheduler, CPU selection prefers locality and idle capacity:
 
-1. Reuse the previous CPU when it is allowed and idle.
-2. Prefer a fully idle sibling/core when SMT is available.
-3. Prefer CPUs in the same L2 or L3 cache domain.
-4. Fall back to any idle CPU.
-5. Return busy when no suitable CPU is available.
+1. reuse the previous CPU when allowed and idle;
+2. prefer a fully idle sibling/core when SMT is available;
+3. prefer the same L2/L3 cache domain;
+4. fall back to another idle CPU;
+5. report busy when no suitable CPU is available.
 
-The user-space scheduler provides CPU hints, while BPF performs the final dispatch and kick behavior.
+## Claim2Core: Where the Architecture Is Going
+
+The next architecture step is to consume actual Kubernetes allocation and compile it into a safe runtime execution plan.
+
+```text
+ResourceClaim allocation
+  → Pod / cgroup
+  → TGID / TID / starttime
+  → proposed execution class
+  → sched_ext / BPF state
+  → runtime metrics / workload SLO
+```
+
+Important boundaries:
+
+- `ResourceSlice` describes **inventory**; it is not proof that a workload owns a device.
+- `ResourceClaim.status.allocation` is the source of truth for actual DRA allocation.
+- Kubernetes API objects belong in the control/update path, not the microsecond scheduler hot path.
+- cgroup / allocated CPU boundaries are authoritative; Gthulhu must never schedule a task outside them.
+- Gthulhu schedules Linux CPU tasks, not CUDA kernels, GPU SMs, MIG, or NIC hardware queues.
+
+See [Claim2Core](claim2core.md) for the roadmap.
 
 ## Runtime Configuration
 
-The daemon reads YAML configuration and can also receive runtime configuration from the Decision Maker.
+A typical configuration looks like:
 
 ```yaml
 monitor:
   enabled: true
-  bpf_object_path: sched_monitor.bpf.o
   collection_interval_sec: 10
-  monitor_all: false
-  stream_events: false
-  prometheus_port: 9090
-  enable_crd_watcher: true
 
 scheduler:
   slice_ns_default: 20000000
   slice_ns_min: 1000000
   mode: gthulhu
-  scheduler_name: ""
   kernel_mode: false
-  max_time_watchdog: true
 
 api:
   url: http://127.0.0.1:8080
   interval: 5
-  public_key_path: ./api/config/jwt_public_key.pem
   enabled: true
   auth_enabled: true
 ```
 
-Important behavior:
+Key points:
 
-- `monitor.enabled` controls the base eBPF metrics collector.
-- `scheduler.mode` controls which scheduler process the daemon supervises: `none`, `gthulhu`, `simple`, or `scx`.
-- `scheduler.scheduler_name` is required when `scheduler.mode` is `scx`; the daemon validates that `/gthulhu/<scheduler_name>` is an allowed executable before applying the runtime config.
-- `scheduler.kernel_mode` enables experimental BPF-side dispatch.
+- `monitor.enabled` controls the eBPF metrics collector;
+- `scheduler.mode` selects monitor-only / Gthulhu / upstream scx behavior;
+- `scheduler.kernel_mode` enables the experimental BPF-side priority path;
 - `api.enabled` controls communication with the Decision Maker.
-- `api.auth_enabled` enables JWT authentication for scheduler API calls.
-- `api.mtls` can enable mutual TLS between the scheduler and API server.
-
-## Metrics
-
-Gthulhu reports two families of metrics:
-
-| Source | Examples | Consumer |
-|--------|----------|----------|
-| eBPF pod monitor | wait time, runtime, context switches, CPU migrations | Prometheus, Grafana, KEDA |
-| sched_ext BSS data | `nr_queued`, `nr_scheduled`, `nr_running`, dispatch counters, congestion counters | Decision Maker API and logs |
-
-The scheduler periodically reads BSS data from the BPF module. When API communication is enabled, it posts those metrics to the Decision Maker.
 
 ## Debugging
 
-Useful commands while developing or operating the scheduler:
-
 ```bash
-# Trace BPF debug output
-sudo cat /sys/kernel/debug/tracing/trace_pipe
-
-# Inspect loaded BPF programs and maps
 sudo bpftool prog show
 sudo bpftool map show
-
-# Run the Gthulhu daemon with an explicit config
-sudo ./main scheduler -config config/config.yaml
+sudo cat /sys/kernel/debug/tracing/trace_pipe
 ```
 
-For monitor-only deployments, set `scheduler.mode` to `none` in the runtime configuration. To use an upstream sched_ext scheduler, deploy the scx-flavored image and set `scheduler.mode: scx` with a bundled scheduler name such as `scx_bpfland` or `scx_cake`.
+When debugging policy application, always distinguish:
+
+- TGID vs TID;
+- user-space vs kernel mode;
+- boosting vs non-boosting strategy;
+- intended strategy vs actual BPF state.
+
+The planned preview/provenance work in `Gthulhu/Gthulhu#134` is intended to make those distinctions directly observable.
