@@ -1,5 +1,5 @@
 site_name: Gthulhu
-site_description: Cloud-native workload optimization scheduler based on Linux Scheduler Extension
+site_description: Cloud-native runtime scheduling from Kubernetes allocation to Linux task execution
 site_url: https://gthulhu.org
 repo_url: https://github.com/Gthulhu/Gthulhu
 edit_uri: https://github.com/Gthulhu/docs/blob/main/docs/
@@ -16,8 +16,10 @@ nav:
     - Debugging with gthulhu-cli: cli.md
     - API Reference: https://pkg.go.dev/github.com/Gthulhu/qumun/goland_core
     - Troubleshooting: faq.md
-  - Blog:
+  - Architecture:
     - How It Works: how-it-works.md
+    - Claim2Core: claim2core.md
+  - Blog:
     - Improving Network Performance with Custom eBPF-based Schedulers: https://free5gc.org/blog/20250726/index.en/
     - Implementing GTP-driven Automatic Scheduling Optimization with eBPF-based Scheduler: https://free5gc.org/blog/20251126/20251126/
     - Hardening Gthulhu Network Security with Istio Ambient Mode: istio.md
@@ -32,7 +34,6 @@ theme:
   custom_dir: docs/overrides
   language: en
   logo: https://raw.githubusercontent.com/Gthulhu/Gthulhu/main/assets/logo.png
-  # favicon: assets/favicon.png
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
@@ -59,7 +60,7 @@ theme:
 
 plugins:
   - search:
-      lang: 
+      lang:
         - en
         - zh
   - i18n:
@@ -80,13 +81,18 @@ plugins:
             Get Started: 開始使用
             Installation: 安裝
             K8s Deployment: K8s 部署
-            Pod-Level Scheduling Metrics: Pod 級排程指標
+            Configuring the scheduling policies: 設定排程策略
             Loading sched_ext schedulers: 載入 sched_ext 排程器
+            Pod-Level Scheduling Metrics: Pod 級排程指標
+            Working with multi-node cluster: 多節點叢集
+            Debugging with gthulhu-cli: 使用 gthulhu-cli 除錯
+            Architecture: 架構
             How It Works: 運作原理
-            Project Goals: 專案目標
-            Development History: 開發歷史
+            Claim2Core: Claim2Core
             API Reference: API 參考
-            FAQ: 常見問題
+            Troubleshooting: 疑難排解
+            Blog: 文章
+            Tutorials: 教學
             Demo: Demo 系統
             Mentioned: 相關報導
             Contributing: 貢獻指南
