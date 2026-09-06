@@ -218,20 +218,8 @@ body,
   background: rgba(59, 130, 246, 0.06);
 }
 
-.gth-cta {
-  margin: 1.2rem 0 2rem;
-  padding: 1.5rem 1.7rem;
-  border-radius: 0.9rem;
-  background: rgba(59, 130, 246, 0.08);
-}
-
-.gth-cta h3 {
-  margin-top: 0;
-}
-
 [data-md-color-scheme="slate"] .gth-hero,
-[data-md-color-scheme="slate"] .gth-flow > p,
-[data-md-color-scheme="slate"] .gth-cta {
+[data-md-color-scheme="slate"] .gth-flow > p {
   background-color: rgba(59, 130, 246, 0.08);
 }
 
