@@ -74,25 +74,25 @@ Use `sched_ext` to apply bounded runtime scheduling policy and protect critical 
 
 <div class="grid cards" markdown>
 
--   :material-eye-outline:{ .lg .middle } **Scheduling observability**
+-   **Scheduling observability**
 
     ---
 
     Pod-level scheduling metrics with eBPF, plus Prometheus and Grafana integration.
 
--   :material-tune-variant:{ .lg .middle } **Fine-grained control**
+-   **Fine-grained control**
 
     ---
 
     Apply scheduling intent to specific workloads, processes, or non-leader worker threads with TID-aware matching.
 
--   :material-server-network:{ .lg .middle } **Cloud-native operation**
+-   **Cloud-native operation**
 
     ---
 
     Manager + per-node Decision Makers distribute scheduling intent across Kubernetes nodes.
 
--   :material-chart-line:{ .lg .middle } **SLO-oriented automation**
+-   **SLO-oriented automation**
 
     ---
 
@@ -125,18 +125,3 @@ The principle is simple:
 - Gthulhu turns that allocation into a verifiable runtime execution policy **without crossing the CPU/resource boundaries Kubernetes already established**.
 
 [Explore the Claim2Core roadmap](claim2core.md){: .md-button }
-[Follow roadmap issue #141](https://github.com/Gthulhu/Gthulhu/issues/141){: .md-button }
-
-## Start with a real workload
-
-<div class="gth-cta" markdown>
-
-### See what CPU scheduling is doing to your workload
-
-Deploy Gthulhu on Kubernetes, inspect scheduler behavior, then apply policy only where the data shows it matters.
-
-[Deploy Gthulhu](k8s.md){: .md-button .md-button--primary }
-[Read the free5GC case study](https://free5gc.org/blog/20251126/20251126/){: .md-button }
-[Contribute](contributing.md){: .md-button }
-
-</div>
