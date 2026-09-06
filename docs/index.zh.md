@@ -74,25 +74,25 @@ Gthulhu 專注處理這個 execution gap。
 
 <div class="grid cards" markdown>
 
--   :material-eye-outline:{ .lg .middle } **Scheduling Observability**
+-   **Scheduling Observability**
 
     ---
 
     使用 eBPF 提供 Pod-level scheduling metrics，並整合 Prometheus 與 Grafana。
 
--   :material-tune-variant:{ .lg .middle } **Fine-grained Control**
+-   **Fine-grained Control**
 
     ---
 
     對特定 workload、process，甚至非 leader worker thread 套用 scheduling intent；支援 TID-aware matching。
 
--   :material-server-network:{ .lg .middle } **Cloud-native Operation**
+-   **Cloud-native Operation**
 
     ---
 
     透過 Manager 與每節點 Decision Maker，把 scheduling intent 分散到 Kubernetes nodes。
 
--   :material-chart-line:{ .lg .middle } **SLO-oriented Automation**
+-   **SLO-oriented Automation**
 
     ---
 
@@ -125,18 +125,3 @@ Delivered workload SLO
 - Gthulhu 把 allocation 轉成可驗證的 runtime execution policy，並且**不突破 Kubernetes 已建立的 CPU / resource boundary**。
 
 [查看 Claim2Core Roadmap](claim2core.md){: .md-button }
-[追蹤 Roadmap Issue #141](https://github.com/Gthulhu/Gthulhu/issues/141){: .md-button }
-
-## 從真實 workload 開始
-
-<div class="gth-cta" markdown>
-
-### 先看 CPU scheduling 到底怎麼影響你的服務
-
-在 Kubernetes 部署 Gthulhu、觀察 scheduler behavior，再只對數據證明有影響的 execution path 套用 policy。
-
-[部署 Gthulhu](k8s.md){: .md-button .md-button--primary }
-[閱讀 free5GC Case Study](https://free5gc.org/blog/20251126/20251126/){: .md-button }
-[參與貢獻](contributing.md){: .md-button }
-
-</div>
