@@ -1,142 +1,142 @@
-<a href="https://landscape.cncf.io/?item=provisioning--automation-configuration--gthulhu" target="_blank"><img src="https://img.shields.io/badge/CNCF%20Landscape-5699C6?style=for-the-badge&logo=cncf&label=cncf" alt="cncf landscape" /></a>
-<a href="https://ebpf.io/applications/" target="_blank"><img src="https://img.shields.io/badge/eBPF%20Application%20Landscape-5699C6?style=for-the-badge&logo=ebpf&label=ebpf" alt="ebpf landscape" /></a>
-
-[![LFX Health Score](https://insights.linuxfoundation.org/api/badge/health-score?project=gthulhu)](https://insights.linuxfoundation.org/project/gthulhu)
-
 # Gthulhu
 
-## 在 CPU contention 下保護關鍵工作負載
+<div class="gth-hero" markdown>
 
-Gthulhu 使用 eBPF 與 Linux `sched_ext`，讓 Kubernetes 節點上的 workload scheduling 可以被觀測、控制與驗證。
+## CPU 忙起來時，讓關鍵工作負載仍然跑得快
 
-**CPU contention 下的實測結果：**
+Gthulhu 是一個以 eBPF 與 Linux `sched_ext` 建構的 cloud-native runtime scheduling 平台。當 CPU contention 開始拖慢 Kubernetes workload 時，Gthulhu 會保護真正影響 latency 與 throughput 的 Linux tasks。
 
-| Workload | Baseline | 使用 Gthulhu | 結果 |
-|---|---:|---:|---:|
-| free5GC / GTP data path — UE 平均 ping latency | **88.98 ms** | **2.079 ms** | **降低 97.66%** |
-| free5GC / GTP data path — UE 最大 ping latency | **130.95 ms** | **8.45 ms** | **降低 93.55%** |
-| vLLM Qwen2.5-0.5B decode (`tg128`) under CPU pressure | **~6.7 t/s** | **~21.3 t/s**（tiered policy） | **約 3.2× throughput** |
+<div class="gth-hero-actions">
+<a href="k8s.md" class="md-button md-button--primary">開始使用</a>
+<a href="https://github.com/Gthulhu/Gthulhu" class="md-button">GitHub</a>
+</div>
 
-free5GC 數據已發表於 free5GC 社群部落格。vLLM 數據來自可重現的 community benchmark，目前正在 vLLM 官方 blog PR 審核中，因此應視為 upstream-reviewing experiment，而不是適用所有環境的效能保證。
+</div>
 
-[閱讀 free5GC Case Study](https://free5gc.org/blog/20251126/20251126/){: .md-button .md-button--primary }
-[vLLM Benchmark PR](https://github.com/vllm-project/vllm-project.github.io/pull/300){: .md-button }
-[開始使用](k8s.md){: .md-button }
+<div class="gth-proof-grid" markdown>
 
-> **DRA chooses what and where; Gthulhu controls how it actually runs.**
+<div class="gth-proof-card" markdown>
+<span class="gth-proof-eyebrow">free5GC / 5G User Plane</span>
 
-## 為什麼這件事重要
+### 平均 latency 降低 97.66%
 
-Workload 即使已經取得 GPU、NIC、CPU set 或 Kubernetes placement，也可能因 host-side Linux tasks 在 CPU contention 下被延遲，而無法達成 latency / throughput SLO。
+CPU stress 下，UE 平均 ping latency **88.98 ms → 2.079 ms**。
 
-Gthulhu 專注於這個 execution gap：
+最大 latency 也從 **130.95 ms → 8.45 ms**。
 
-```text
-Kubernetes admission / placement / allocation
-                    │
-                    ▼
-             Gthulhu runtime plane
-                    │
-       Pod / cgroup / TGID / TID resolution
-                    │
-                    ▼
-               sched_ext + eBPF
-                    │
-                    ▼
-       latency / throughput / jitter / SLO
-```
+[閱讀 free5GC 已發表 Case Study →](https://free5gc.org/blog/20251126/20251126/)
+</div>
 
-## 已驗證的使用案例
+<div class="gth-proof-card" markdown>
+<span class="gth-proof-eyebrow">vLLM / GPU Inference</span>
 
-### 5G User Plane latency
+### Decode throughput 約提升 3.2×
 
-free5GC 社群已發表 GTP-driven scheduling 實驗，將 `gtp5g-tracer`、userspace operator 與 Gthulhu 串起來。在相同 CPU stress 下，UE 平均 ping latency 從 **88.98 ms 降到 2.079 ms**，最大 latency 從 **130.95 ms 降到 8.45 ms**。
+CPU pressure 下，`tg128` 從 **~6.7 t/s → ~21.3 t/s**，使用 Gthulhu + tiered scheduling policy。
 
-[閱讀：Implementing GTP-driven Automatic Scheduling Optimization with eBPF-based Scheduler](https://free5gc.org/blog/20251126/20251126/)
+*此為可重現的 community benchmark，目前仍在 vLLM upstream blog review 中。*
 
-另一篇較早的 free5GC case study 也展示如何利用 network-domain knowledge 搭配 Gthulhu 的 `sched_ext` policy 降低 RTT。
+[查看 benchmark 與實驗方法 →](https://github.com/vllm-project/vllm-project.github.io/pull/300)
+</div>
 
-[閱讀：利用 Custom eBPF-based Schedulers 改善網路效能](https://free5gc.org/blog/20250726/)
+</div>
 
-### vLLM 在 CPU pressure 下的 inference
+<div class="gth-trust-row" markdown>
+<a href="https://landscape.cncf.io/?item=provisioning--automation-configuration--gthulhu" target="_blank"><img src="https://img.shields.io/badge/CNCF%20Landscape-5699C6?style=for-the-badge&logo=cncf&label=cncf" alt="cncf landscape" /></a>
+<a href="https://ebpf.io/applications/" target="_blank"><img src="https://img.shields.io/badge/eBPF%20Application%20Landscape-5699C6?style=for-the-badge&logo=ebpf&label=ebpf" alt="ebpf landscape" /></a>
+<a href="https://insights.linuxfoundation.org/project/gthulhu"><img src="https://insights.linuxfoundation.org/api/badge/health-score?project=gthulhu" alt="LFX Health Score" /></a>
+</div>
 
-另一個可重現實驗使用 DGX Spark / GB10、MicroK8s、vLLM、`stress-ng` 與 Gthulhu，刻意隔離 CPU scheduling 對 GPU inference 的影響。在目前提交給 vLLM blog 的 benchmark 中，default scheduler 在 CPU pressure 下 decode throughput 約為 **6–7 t/s**；使用 Gthulhu 並對 GPU-related work 與 vLLM `EngineCore` 套用 tiered policy 後，`tg128` 約可達 **21 t/s**。
+## Gthulhu 解決什麼問題？
 
-這裡將它標示為 **upstream 審核中的 community benchmark**，而不是廣泛化的 performance guarantee。
+Kubernetes 可以把 workload 放到正確的 Node，也可以分配正確的資源；但這不代表 workload 裡真正重要的 Linux threads，在需要 CPU 時一定拿得到 CPU。
 
-[查看 vLLM blog PR #300 的 benchmark 與方法](https://github.com/vllm-project/vllm-project.github.io/pull/300)
+當系統出現 contention，GPU feeder、`EngineCore`、packet-processing workers、IRQ-related work 或其他 latency-sensitive tasks，都可能被背景 CPU workload 延遲。最後形成一個很直接的問題：**資源已經分配了，SLO 還是沒達成。**
 
-## Gthulhu 目前已具備的能力
+Gthulhu 專注處理這個 execution gap。
 
-- **Pod 層級 scheduling observability**：使用 eBPF 收集 scheduler signals。
-- **Prometheus / Grafana / KEDA 整合**：支援 scheduler-aware operations 與 scaling。
-- **分散式 scheduling intent**：Manager 搭配每節點 Decision Maker。
-- **自訂 CPU scheduling**：Linux 6.12+ 可使用 `sched_ext`。
-- **TID-aware node policy matching**：可以直接命中非 leader worker thread。
-- **明確的 priority semantics**：user-space 與 kernel mode 都有清楚的 boosting 行為。
+<div class="gth-flow" markdown>
 
-[了解運作原理](how-it-works.md){: .md-button }
-[Claim2Core Roadmap](claim2core.md){: .md-button }
+**1. Observe — 看見問題**  
+用 eBPF 看清楚哪些 tasks 在等待、執行、migration，以及誰正在競爭 CPU。
 
-## Claim2Core：從 allocation 到 delivered performance
+**2. Target — 找到真正重要的 task**  
+把 Kubernetes workload intent 解析到實際影響服務的 Linux process / thread。
 
-下一個架構階段，是把 Kubernetes 的實際 allocation 接到 runtime task scheduling：
+**3. Control — 精準控制**  
+利用 `sched_ext` 套用有邊界的 runtime scheduling policy，保護關鍵 execution path。
+
+</div>
+
+> **DRA chooses what and where. Gthulhu controls how it actually runs.**
+
+## 為 workload-aware runtime scheduling 而設計
+
+<div class="grid cards" markdown>
+
+-   :material-eye-outline:{ .lg .middle } **Scheduling Observability**
+
+    ---
+
+    使用 eBPF 提供 Pod-level scheduling metrics，並整合 Prometheus 與 Grafana。
+
+-   :material-tune-variant:{ .lg .middle } **Fine-grained Control**
+
+    ---
+
+    對特定 workload、process，甚至非 leader worker thread 套用 scheduling intent；支援 TID-aware matching。
+
+-   :material-server-network:{ .lg .middle } **Cloud-native Operation**
+
+    ---
+
+    透過 Manager 與每節點 Decision Maker，把 scheduling intent 分散到 Kubernetes nodes。
+
+-   :material-chart-line:{ .lg .middle } **SLO-oriented Automation**
+
+    ---
+
+    將 scheduler signals 接到 Prometheus、Grafana 與 KEDA，支援 runtime-aware operations 與 scaling。
+
+</div>
+
+[了解 Gthulhu 如何運作](how-it-works.md){: .md-button }
+
+## 下一步：Claim2Core
+
+目前 Gthulhu 已能在 runtime 觀測與控制 Linux task scheduling。下一步，是把這個能力直接接到 Kubernetes **實際分配的資源**。
 
 ```text
 Kueue / Workload API
-        │ admission / quota
-        ▼
+        ↓
 kube-scheduler / DRA
-        │ Node + device + topology allocation
-        ▼
+        ↓  ResourceClaim + topology
 Gthulhu Runtime Plane
-        │ ResourceClaim → Pod/cgroup → TGID/TID
-        ▼
+        ↓  Pod / cgroup / TGID / TID
 sched_ext + eBPF
-        │ runtime policy + verification
-        ▼
+        ↓
 Delivered workload SLO
 ```
 
-最重要的 correctness 原則是：
+核心原則很簡單：
 
-- `ResourceSlice` 是 **inventory**。
-- `ResourceClaim.status.allocation` 才是 workload 的 **actual allocation**。
+- `ResourceSlice` 告訴我們有哪些資源。
+- `ResourceClaim.status.allocation` 告訴我們 workload 實際拿到了什麼。
+- Gthulhu 把 allocation 轉成可驗證的 runtime execution policy，並且**不突破 Kubernetes 已建立的 CPU / resource boundary**。
 
-Gthulhu 不重新實作 kube-scheduler、DRA 或 Kueue，而是在 Kubernetes/cgroup 建立的 resource envelope 內，控制 workload 真正取得 CPU service 的方式。
+[查看 Claim2Core Roadmap](claim2core.md){: .md-button }
+[追蹤 Roadmap Issue #141](https://github.com/Gthulhu/Gthulhu/issues/141){: .md-button }
 
-完整 implementation phases 與安全邊界請看 [Claim2Core](claim2core.md)。
+## 從真實 workload 開始
 
-## 架構一覽
+<div class="gth-cta" markdown>
 
-```text
-User / Web UI / CRD
-        │
-        ▼
-Manager API ───────▶ MongoDB / Kubernetes API
-        │
-        ▼
-Decision Maker DaemonSet
-        │
-        ├── eBPF scheduling metrics collector ──▶ Prometheus / Grafana / KEDA
-        │
-        └── task resolution / scheduling intent
-                         │
-                         ▼
-                   Gthulhu daemon
-                         │
-                         ▼
-                    sched_ext / BPF
-                         │
-                         ▼
-                   Linux scheduler
-```
+### 先看 CPU scheduling 到底怎麼影響你的服務
 
-## 參與 Gthulhu
+在 Kubernetes 部署 Gthulhu、觀察 scheduler behavior，再只對數據證明有影響的 execution path 套用 policy。
 
-- [在 Kubernetes 部署 Gthulhu](k8s.md)
-- [理解系統架構與 scheduler semantics](how-it-works.md)
-- [閱讀 Claim2Core roadmap](claim2core.md)
-- [參與貢獻](contributing.md)
-- [GitHub repository](https://github.com/Gthulhu/Gthulhu)
-- [Roadmap issue #141](https://github.com/Gthulhu/Gthulhu/issues/141)
+[部署 Gthulhu](k8s.md){: .md-button .md-button--primary }
+[閱讀 free5GC Case Study](https://free5gc.org/blog/20251126/20251126/){: .md-button }
+[參與貢獻](contributing.md){: .md-button }
+
+</div>
