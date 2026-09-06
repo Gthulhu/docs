@@ -1,142 +1,142 @@
-<a href="https://landscape.cncf.io/?item=provisioning--automation-configuration--gthulhu" target="_blank"><img src="https://img.shields.io/badge/CNCF%20Landscape-5699C6?style=for-the-badge&logo=cncf&label=cncf" alt="cncf landscape" /></a>
-<a href="https://ebpf.io/applications/" target="_blank"><img src="https://img.shields.io/badge/eBPF%20Application%20Landscape-5699C6?style=for-the-badge&logo=ebpf&label=ebpf" alt="ebpf landscape" /></a>
-
-[![LFX Health Score](https://insights.linuxfoundation.org/api/badge/health-score?project=gthulhu)](https://insights.linuxfoundation.org/project/gthulhu)
-
 # Gthulhu
 
-## Protect critical workloads from CPU contention
+<div class="gth-hero" markdown>
 
-Gthulhu uses eBPF and Linux `sched_ext` to make workload scheduling observable and controllable across Kubernetes nodes.
+## Keep critical workloads fast when CPUs get busy
 
-**Measured results under CPU contention:**
+Gthulhu is a cloud-native runtime scheduling platform built with eBPF and Linux `sched_ext`. It protects latency- and throughput-sensitive Linux tasks inside Kubernetes workloads when CPU contention would otherwise slow them down.
 
-| Workload | Baseline | With Gthulhu | Result |
-|---|---:|---:|---:|
-| free5GC / GTP data path — average UE ping latency | **88.98 ms** | **2.079 ms** | **97.66% lower** |
-| free5GC / GTP data path — maximum UE ping latency | **130.95 ms** | **8.45 ms** | **93.55% lower** |
-| vLLM Qwen2.5-0.5B decode (`tg128`) under CPU pressure | **~6.7 t/s** | **~21.3 t/s** with tiered policy | **~3.2× throughput** |
+<div class="gth-hero-actions">
+<a href="k8s.md" class="md-button md-button--primary">Get Started</a>
+<a href="https://github.com/Gthulhu/Gthulhu" class="md-button">View on GitHub</a>
+</div>
 
-The free5GC numbers are published in the free5GC community blog. The vLLM result comes from a reproducible community benchmark currently proposed to the vLLM project blog; treat it as an experiment under upstream review rather than a project-wide guarantee.
+</div>
 
-[Read the free5GC case study](https://free5gc.org/blog/20251126/20251126/){: .md-button .md-button--primary }
-[vLLM benchmark PR](https://github.com/vllm-project/vllm-project.github.io/pull/300){: .md-button }
-[Get Started](k8s.md){: .md-button }
+<div class="gth-proof-grid" markdown>
 
-> **DRA chooses what and where; Gthulhu controls how it actually runs.**
+<div class="gth-proof-card" markdown>
+<span class="gth-proof-eyebrow">free5GC / 5G user plane</span>
 
-## Why this matters
+### 97.66% lower average latency
 
-A workload can already own a GPU, NIC, CPU set, or Kubernetes placement and still miss its latency or throughput target because its host-side Linux tasks are delayed by CPU contention.
+**88.98 ms → 2.079 ms** average UE ping latency under CPU stress.
 
-Gthulhu focuses on that execution gap:
+Maximum latency also fell from **130.95 ms → 8.45 ms**.
 
-```text
-Kubernetes admission / placement / allocation
-                    │
-                    ▼
-             Gthulhu runtime plane
-                    │
-       Pod / cgroup / TGID / TID resolution
-                    │
-                    ▼
-               sched_ext + eBPF
-                    │
-                    ▼
-       latency / throughput / jitter / SLO
-```
+[Read the published free5GC case study →](https://free5gc.org/blog/20251126/20251126/)
+</div>
 
-## Proven use cases
+<div class="gth-proof-card" markdown>
+<span class="gth-proof-eyebrow">vLLM / GPU inference</span>
 
-### 5G user-plane latency
+### ~3.2× decode throughput
 
-The free5GC community published a GTP-driven scheduling experiment that combines `gtp5g-tracer`, a userspace operator, and Gthulhu. Under the same CPU stress, average UE ping latency dropped from **88.98 ms to 2.079 ms**, while maximum latency dropped from **130.95 ms to 8.45 ms**.
+**~6.7 t/s → ~21.3 t/s** on `tg128` under CPU pressure with Gthulhu + tiered scheduling policy.
 
-[Read: Implementing GTP-driven Automatic Scheduling Optimization with eBPF-based Scheduler](https://free5gc.org/blog/20251126/20251126/)
+*Reproducible community benchmark currently under upstream vLLM blog review.*
 
-A separate earlier free5GC case study also documents using Gthulhu to reduce RTT by combining application/domain knowledge with custom `sched_ext` policy.
+[Review the benchmark and methodology →](https://github.com/vllm-project/vllm-project.github.io/pull/300)
+</div>
 
-[Read: Improving Network Performance with Custom eBPF-based Schedulers](https://free5gc.org/blog/20250726/index.en/)
+</div>
 
-### vLLM inference under CPU pressure
+<div class="gth-trust-row" markdown>
+<a href="https://landscape.cncf.io/?item=provisioning--automation-configuration--gthulhu" target="_blank"><img src="https://img.shields.io/badge/CNCF%20Landscape-5699C6?style=for-the-badge&logo=cncf&label=cncf" alt="cncf landscape" /></a>
+<a href="https://ebpf.io/applications/" target="_blank"><img src="https://img.shields.io/badge/eBPF%20Application%20Landscape-5699C6?style=for-the-badge&logo=ebpf&label=ebpf" alt="ebpf landscape" /></a>
+<a href="https://insights.linuxfoundation.org/project/gthulhu"><img src="https://insights.linuxfoundation.org/api/badge/health-score?project=gthulhu" alt="LFX Health Score" /></a>
+</div>
 
-A reproducible DGX Spark / GB10 experiment uses MicroK8s, vLLM, `stress-ng`, and Gthulhu to isolate the effect of CPU scheduling on GPU inference. In the submitted benchmark, decode throughput under CPU pressure is around **6–7 t/s** with the default scheduler and reaches roughly **21 t/s** on `tg128` with Gthulhu plus tiered policies targeting GPU-related work and vLLM's `EngineCore` thread.
+## The problem Gthulhu solves
 
-This result is linked here as an **upstream-reviewing community benchmark**, not as a generalized performance guarantee.
+Kubernetes can place a workload on the right node and allocate the right resources. That still does not guarantee the workload's critical Linux threads will get CPU time when they need it.
 
-[Review the benchmark and methodology in vLLM blog PR #300](https://github.com/vllm-project/vllm-project.github.io/pull/300)
+Under contention, GPU feeder threads, `EngineCore`, packet-processing workers, IRQ-related work, or other latency-sensitive tasks can be delayed by background CPU load. The result is simple: **allocated resources, but missed SLOs**.
 
-## What Gthulhu provides today
+Gthulhu closes that execution gap.
 
-- **Pod-level scheduling observability** with eBPF.
-- **Prometheus / Grafana / KEDA integration** for scheduler-aware operations and scaling.
-- **Distributed scheduling intent** through a Manager and per-node Decision Makers.
-- **Custom CPU scheduling** on Linux 6.12+ with `sched_ext`.
-- **TID-aware node-policy matching** so non-leader worker threads can be targeted directly.
-- **Explicit priority semantics** across user-space and kernel scheduler modes.
+<div class="gth-flow" markdown>
 
-[How It Works](how-it-works.md){: .md-button }
-[Claim2Core Roadmap](claim2core.md){: .md-button }
+**1. Observe**  
+Use eBPF to see which tasks are waiting, running, migrating, and competing for CPU.
 
-## Claim2Core: from allocation to delivered performance
+**2. Target**  
+Resolve Kubernetes workload intent down to the Linux process or thread that actually matters.
 
-The next architecture step is to connect actual Kubernetes allocation to runtime task scheduling:
+**3. Control**  
+Use `sched_ext` to apply bounded runtime scheduling policy and protect critical execution paths.
+
+</div>
+
+> **DRA chooses what and where. Gthulhu controls how it actually runs.**
+
+## Built for workload-aware runtime scheduling
+
+<div class="grid cards" markdown>
+
+-   :material-eye-outline:{ .lg .middle } **Scheduling observability**
+
+    ---
+
+    Pod-level scheduling metrics with eBPF, plus Prometheus and Grafana integration.
+
+-   :material-tune-variant:{ .lg .middle } **Fine-grained control**
+
+    ---
+
+    Apply scheduling intent to specific workloads, processes, or non-leader worker threads with TID-aware matching.
+
+-   :material-server-network:{ .lg .middle } **Cloud-native operation**
+
+    ---
+
+    Manager + per-node Decision Makers distribute scheduling intent across Kubernetes nodes.
+
+-   :material-chart-line:{ .lg .middle } **SLO-oriented automation**
+
+    ---
+
+    Feed scheduler signals into Prometheus, Grafana, and KEDA to support runtime-aware operations and scaling.
+
+</div>
+
+[See how Gthulhu works](how-it-works.md){: .md-button }
+
+## Where Gthulhu is going: Claim2Core
+
+Today, Gthulhu can observe and control Linux task scheduling at runtime. The next step is to connect that control directly to Kubernetes' **actual resource allocation**.
 
 ```text
 Kueue / Workload API
-        │ admission / quota
-        ▼
+        ↓
 kube-scheduler / DRA
-        │ Node + device + topology allocation
-        ▼
+        ↓  ResourceClaim + topology
 Gthulhu Runtime Plane
-        │ ResourceClaim → Pod/cgroup → TGID/TID
-        ▼
+        ↓  Pod / cgroup / TGID / TID
 sched_ext + eBPF
-        │ runtime policy + verification
-        ▼
+        ↓
 Delivered workload SLO
 ```
 
-The critical correctness rule is:
+The principle is simple:
 
-- `ResourceSlice` is **inventory**.
-- `ResourceClaim.status.allocation` is the workload's **actual allocation**.
+- `ResourceSlice` tells us what resources exist.
+- `ResourceClaim.status.allocation` tells us what the workload actually received.
+- Gthulhu turns that allocation into a verifiable runtime execution policy **without crossing the CPU/resource boundaries Kubernetes already established**.
 
-Gthulhu should not reimplement kube-scheduler, DRA, or Kueue. It should consume their decisions and control Linux CPU execution **inside** the resource envelope established by Kubernetes/cgroups.
+[Explore the Claim2Core roadmap](claim2core.md){: .md-button }
+[Follow roadmap issue #141](https://github.com/Gthulhu/Gthulhu/issues/141){: .md-button }
 
-Read [Claim2Core](claim2core.md) for the implementation phases and safety boundaries.
+## Start with a real workload
 
-## Architecture at a glance
+<div class="gth-cta" markdown>
 
-```text
-User / Web UI / CRD
-        │
-        ▼
-Manager API ───────▶ MongoDB / Kubernetes API
-        │
-        ▼
-Decision Maker DaemonSet
-        │
-        ├── eBPF scheduling metrics collector ──▶ Prometheus / Grafana / KEDA
-        │
-        └── task resolution / scheduling intent
-                         │
-                         ▼
-                   Gthulhu daemon
-                         │
-                         ▼
-                    sched_ext / BPF
-                         │
-                         ▼
-                   Linux scheduler
-```
+### See what CPU scheduling is doing to your workload
 
-## Get involved
+Deploy Gthulhu on Kubernetes, inspect scheduler behavior, then apply policy only where the data shows it matters.
 
-- [Deploy Gthulhu with Kubernetes](k8s.md)
-- [Understand the architecture and scheduler semantics](how-it-works.md)
-- [Read the Claim2Core roadmap](claim2core.md)
-- [Contribute](contributing.md)
-- [GitHub repository](https://github.com/Gthulhu/Gthulhu)
-- [Roadmap issue #141](https://github.com/Gthulhu/Gthulhu/issues/141)
+[Deploy Gthulhu](k8s.md){: .md-button .md-button--primary }
+[Read the free5GC case study](https://free5gc.org/blog/20251126/20251126/){: .md-button }
+[Contribute](contributing.md){: .md-button }
+
+</div>
