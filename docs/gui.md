@@ -4,6 +4,9 @@
 
 Gthulhu provides a Web GUI that allows users to conveniently configure scheduling policies.
 
+!!! tip "Scheduling a host process or standalone vLLM?"
+    This page describes the Kubernetes-oriented scheduling policy flow. If the workload runs directly on a node, in Docker, or outside Kubernetes, use [Node-Level Scheduling Policies](node-policies.md) instead.
+
 > **Note**
 > If you have deployed Gthulhu on a Kubernetes cluster, please first use the `kubectl port-forward svc/gthulhu-manager 8080:8080` command to forward the local port 8080 to the Gthulhu Manager service, then visit `http://localhost:8080` in your browser to access the Web GUI.
 

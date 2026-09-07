@@ -10,6 +10,7 @@ nav:
     - Installation: installation.md
     - K8s Deployment: k8s.md
     - Configuring the scheduling policies: gui.md
+    - Node-level scheduling policies: node-policies.md
     - Loading sched_ext schedulers: scx-loader.md
     - Pod-Level Scheduling Metrics: pod-metrics.md
     - Working with multi-node cluster: multi-node.md
@@ -82,6 +83,7 @@ plugins:
             Installation: 安裝
             K8s Deployment: K8s 部署
             Configuring the scheduling policies: 設定排程策略
+            Node-level scheduling policies: Node-level 排程策略
             Loading sched_ext schedulers: 載入 sched_ext 排程器
             Pod-Level Scheduling Metrics: Pod 級排程指標
             Working with multi-node cluster: 多節點叢集
