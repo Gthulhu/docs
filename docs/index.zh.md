@@ -27,6 +27,18 @@ CPU stress 下，UE 平均 ping latency **88.98 ms → 2.079 ms**。
 [閱讀 free5GC 已發表 Case Study →](https://free5gc.org/blog/20251126/20251126/)
 </div>
 
+<div class="gth-proof-card" markdown>
+<span class="gth-proof-eyebrow">vLLM / GPU Inference</span>
+
+### 降低 CPU contention 對 inference 的干擾
+
+優先保護 vLLM CPU-side engine 與 feeder threads，降低 noisy neighbors 阻塞 GPU execution path 的機會。
+
+*實際改善幅度會依 workload 與 contention pattern 而不同，不應解讀為一般性的 3× inference speedup。*
+
+[查看實驗 benchmark 與方法 →](https://github.com/vllm-project/vllm-project.github.io/pull/300)
+</div>
+
 </div>
 
 <div class="gth-trust-row" markdown>
