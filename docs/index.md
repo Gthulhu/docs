@@ -27,6 +27,18 @@ Maximum latency also fell from **130.95 ms → 8.45 ms**.
 [Read the published free5GC case study →](https://free5gc.org/blog/20251126/20251126/)
 </div>
 
+<div class="gth-proof-card" markdown>
+<span class="gth-proof-eyebrow">vLLM / GPU inference</span>
+
+### Protect inference from CPU contention
+
+Prioritize CPU-side vLLM engine and feeder threads so noisy neighbors are less likely to stall the GPU execution path.
+
+*Observed improvements depend on the workload and contention pattern; this should not be interpreted as a general 3× inference speedup.*
+
+[Review the experimental benchmark and methodology →](https://github.com/vllm-project/vllm-project.github.io/pull/300)
+</div>
+
 </div>
 
 <div class="gth-trust-row" markdown>
