@@ -27,18 +27,6 @@ CPU stress 下，UE 平均 ping latency **88.98 ms → 2.079 ms**。
 [閱讀 free5GC 已發表 Case Study →](https://free5gc.org/blog/20251126/20251126/)
 </div>
 
-<div class="gth-proof-card" markdown>
-<span class="gth-proof-eyebrow">vLLM / GPU Inference</span>
-
-### Decode throughput 約提升 3.2×
-
-CPU pressure 下，`tg128` 從 **~6.7 t/s → ~21.3 t/s**，使用 Gthulhu + tiered scheduling policy。
-
-*此為可重現的 community benchmark，目前仍在 vLLM upstream blog review 中。*
-
-[查看 benchmark 與實驗方法 →](https://github.com/vllm-project/vllm-project.github.io/pull/300)
-</div>
-
 </div>
 
 <div class="gth-trust-row" markdown>
