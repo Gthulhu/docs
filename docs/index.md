@@ -27,18 +27,6 @@ Maximum latency also fell from **130.95 ms → 8.45 ms**.
 [Read the published free5GC case study →](https://free5gc.org/blog/20251126/20251126/)
 </div>
 
-<div class="gth-proof-card" markdown>
-<span class="gth-proof-eyebrow">vLLM / GPU inference</span>
-
-### ~3.2× decode throughput
-
-**~6.7 t/s → ~21.3 t/s** on `tg128` under CPU pressure with Gthulhu + tiered scheduling policy.
-
-*Reproducible community benchmark currently under upstream vLLM blog review.*
-
-[Review the benchmark and methodology →](https://github.com/vllm-project/vllm-project.github.io/pull/300)
-</div>
-
 </div>
 
 <div class="gth-trust-row" markdown>
