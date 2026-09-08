@@ -32,9 +32,7 @@ Maximum latency also fell from **130.95 ms → 8.45 ms**.
 
 ### Protect inference from CPU contention
 
-Prioritize CPU-side vLLM engine and feeder threads so noisy neighbors are less likely to stall the GPU execution path.
-
-*Observed improvements depend on the workload and contention pattern; this should not be interpreted as a general 3× inference speedup.*
+Prioritize CPU-side vLLM engine and feeder threads to keep the GPU execution path responsive when noisy neighbors compete for CPU time.
 
 [Review the experimental benchmark and methodology →](https://github.com/vllm-project/vllm-project.github.io/pull/300)
 </div>
