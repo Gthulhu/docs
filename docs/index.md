@@ -30,13 +30,11 @@ Maximum latency also fell from **130.95 ms → 8.45 ms**.
 <div class="gth-proof-card" markdown>
 <span class="gth-proof-eyebrow">vLLM / GPU inference</span>
 
-### ~3.2× decode throughput
+### Protect inference from CPU contention
 
-**~6.7 t/s → ~21.3 t/s** on `tg128` under CPU pressure with Gthulhu + tiered scheduling policy.
+Prioritize CPU-side vLLM engine and feeder threads to keep the GPU execution path responsive when noisy neighbors compete for CPU time.
 
-*Reproducible community benchmark currently under upstream vLLM blog review.*
-
-[Review the benchmark and methodology →](https://github.com/vllm-project/vllm-project.github.io/pull/300)
+[Review the experimental benchmark and methodology →](https://github.com/vllm-project/vllm-project.github.io/pull/300)
 </div>
 
 </div>

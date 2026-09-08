@@ -30,13 +30,11 @@ CPU stress 下，UE 平均 ping latency **88.98 ms → 2.079 ms**。
 <div class="gth-proof-card" markdown>
 <span class="gth-proof-eyebrow">vLLM / GPU Inference</span>
 
-### Decode throughput 約提升 3.2×
+### 降低 CPU contention 對 inference 的干擾
 
-CPU pressure 下，`tg128` 從 **~6.7 t/s → ~21.3 t/s**，使用 Gthulhu + tiered scheduling policy。
+優先保護 vLLM CPU-side engine 與 feeder threads，讓 noisy neighbors 競爭 CPU 時，GPU execution path 仍能維持順暢。
 
-*此為可重現的 community benchmark，目前仍在 vLLM upstream blog review 中。*
-
-[查看 benchmark 與實驗方法 →](https://github.com/vllm-project/vllm-project.github.io/pull/300)
+[查看實驗 benchmark 與方法 →](https://github.com/vllm-project/vllm-project.github.io/pull/300)
 </div>
 
 </div>
