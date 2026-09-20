@@ -25,9 +25,10 @@ Gthulhu 提供了一個 Web GUI，讓使用者可以方便地設定 scheduling p
 - Strategy ID：由系統自動生成的唯一識別碼。
 - Namespace：指定該 scheduling policy 的 Namespace。
 - Priority：設定該 scheduling policy 的優先級，範圍是 0 - 20。
-    - 範圍 0 - 9 是高優先任務類別，這些任務能夠 preempt 其他優先權較低的任務。
-    - 範圍 10 - 19 是一般優先任務類別，不具有 preempt 能力。
-    - 不同的優先權會取得不同的截止時間，數值越低代表優先權越高，優先權越高的任務截止時間越短。
+    - `0` 是 non-boosting：任務不會被提升，維持原本的排程。在 kernel mode 下，`Priority == 0` 的 strategy 會被丟棄、沒有排程效果；在 user-space mode 下，它仍然可以帶一個自訂 time slice，但不會插隊。
+    - `1` - `9` 是高優先，能夠 preempt 其他優先權較低的任務。
+    - `10` - `19` 是一般優先，不具有 preempt 能力。
+    - 在會 boost 的數值裡，數值越低代表優先權越高、截止時間越短。
 - Execution Time：指定該 scheduling policy 的執行時間，需要注意的是，這個欄位設定的是一次排程中最大允許的執行時間。
 - Command Regex：用於匹配命令的正則表達式，例如：`.*` 能夠匹配符合 label selector 找到的 Pod 上的所有 Process。
 - K8s Namespaces：指定該 scheduling policy 適用的 Kubernetes Namespace。
