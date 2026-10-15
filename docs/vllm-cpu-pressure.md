@@ -7,7 +7,7 @@ The host still has to accept requests, tokenize input, schedule work, launch ker
 This post combines two sets of experiments around Gthulhu and vLLM:
 
 1. our original **single-node GB10 experiment**, where deliberate CPU saturation severely degraded vLLM and `sched_ext` scheduling recovered much of that loss; and
-2. later **DGX Spark tester results**, which showed both sides of the story: CPU contention can materially hurt multi-node inference, but static pinning may already solve a stable placement problem, and some GPU/network-bound workloads barely respond to CPU scheduling at all.
+2. later **DGX Spark tester results**, which showed both sides of the story: CPU contention can materially hurt multi-node inference, while some GPU/network-bound workloads barely respond to CPU scheduling at all.
 
 The useful conclusion is therefore not "a custom scheduler makes AI inference faster." It is narrower:
 
@@ -189,23 +189,43 @@ Simply isolating the vLLM work onto the fast Cortex-X925 cores brought throughpu
 
 The workload spans two machines and uses NCCL/RoCE, yet starving host-side work on one node was enough to gate end-to-end decode progress. Distributed GPU inference is still dependent on host scheduling.
 
-### 3. Static pinning is a strong baseline
+### 3. Static CPU pinning is useful — but operationally limited in a heterogeneous cluster
 
-This result is also a challenge for Gthulhu.
+In this experiment, "pinning" means assigning a process or thread a fixed CPU affinity so Linux may only run it on a selected set of logical CPUs. One simple way to do that is `taskset`:
 
-If contention is stable and the correct cores are known in advance, `taskset`, cpusets, or Kubernetes CPU management can be simple and effective. A dynamic scheduler does not deserve to exist merely because "contention hurts performance."
+```bash
+# Run a process only on CPUs 0-9
+taskset -c 0-9 <command>
 
-The benchmark for Gthulhu therefore needs to be:
+# Change the CPU affinity of an existing process
+taskset -cp 0-9 <pid>
+```
+
+The same idea can also be implemented with cpusets, cgroups, or Kubernetes CPU Manager policies. The important point is that the CPU set is chosen explicitly in advance.
+
+That makes static pinning a useful experimental baseline: if pinning the critical inference work to a known-good CPU set restores the lost performance, we have strong evidence that host CPU scheduling or placement is part of the bottleneck.
+
+But that does **not** mean static pinning is always the practical production answer.
+
+On a multi-node Kubernetes cluster, the difficulty moves from "can a task run faster on these CPUs?" to "which CPUs should this workload use on whichever node it lands on?" Nodes may have different CPU models, core counts, SMT layouts, NUMA topology, performance/efficiency core mixes, GPU/PCIe locality, and background load. A CPU ID such as `0-9` has no portable meaning across the cluster.
+
+The workload may also move. Pods are rescheduled, replicas scale out, nodes are drained, and different nodes may expose different topology. A static affinity rule therefore needs node-specific knowledge and lifecycle management: discover the local topology, decide which tasks should be pinned, translate that decision into the correct CPU IDs, and keep it valid as placement and contention change.
+
+This is exactly where a runtime system such as Gthulhu becomes more interesting. Rather than treating "pin vLLM to CPU 0-9" as a cluster-wide policy, the intent can be expressed at the workload/task level — for example, protect the inference hot path or favor CPUs close to an allocated device — and resolved independently on each node according to that node's actual resources and runtime state.
+
+So static pinning remains an important **baseline and diagnostic tool**, but the comparison we care about is not simply "Gthulhu versus `taskset` on one known machine." A stronger test is whether Gthulhu can preserve the benefit of good CPU placement while adapting across heterogeneous nodes and changing runtime conditions without maintaining per-node affinity rules by hand.
+
+The benchmark should therefore compare:
 
 ```text
 default scheduling
         vs
-static isolation / pinning
+manually tuned static affinity / pinning
         vs
-Gthulhu dynamic scheduling
+Gthulhu workload-aware runtime scheduling
 ```
 
-and it needs scenarios where the best decision changes during runtime.
+across multiple node types and under conditions where placement or contention changes over time.
 
 ---
 
@@ -252,20 +272,18 @@ A fair scheduler does not necessarily know which wakeup is part of the inference
 
 This is especially interesting when a node combines inference with preprocessing, checkpointing, model download/staging, observability, or other background work.
 
-## Case 3: static pinning solves the problem permanently — **custom scheduling may add little**
+## Case 3: static pinning works locally, but cluster-wide placement is dynamic — **good fit for runtime resolution**
 
-If the workload always runs on the same topology and the contention pattern is predictable, reserving CPUs may be enough.
+A known CPU set can be very effective on a single machine, but a Kubernetes workload does not necessarily stay on that machine. In a heterogeneous cluster, the right CPUs depend on the node that was selected, its topology, the devices allocated to the Pod, and current contention.
 
-In that case, dynamic scheduling has to justify itself through something static pinning cannot handle, for example:
+That means a portable policy should ideally express **intent** rather than hard-coded CPU IDs. For example:
 
-- contention moves between CPU groups;
-- workload phases change from prefill to decode to communication;
-- several inference services have different priorities;
-- model staging temporarily consumes CPU and I/O;
-- fast cores are shared rather than permanently dedicated;
-- resource allocation or topology changes as Pods scale or move.
+- keep the decode-critical threads responsive;
+- prefer CPUs local to the allocated GPU or NIC;
+- separate latency-sensitive workers from batch CPU consumers;
+- adapt when Pods move, replicas scale, or contention changes.
 
-This is where Gthulhu's longer-term value should be tested.
+This is a stronger justification for Gthulhu than simply replacing `taskset` on one server.
 
 ## Case 4: GPU, memory, or network is already the bottleneck — **low potential**
 
@@ -310,11 +328,12 @@ Does static CPU isolation recover it?
         └── yes
              │
              ▼
-Is the optimal placement stable?
+Can the correct CPU placement be expressed and maintained statically
+across the actual cluster topology and workload lifecycle?
         │
-        ├── yes ──→ static pinning may be sufficient
+        ├── yes ──→ static affinity may be sufficient
         │
-        └── no ──→ dynamic workload-aware scheduling becomes interesting
+        └── no ──→ runtime workload-aware scheduling becomes interesting
 ```
 
 This is a much stronger methodology than quoting a single speedup number.
@@ -338,11 +357,11 @@ sched_ext
 GPU / network progress
 ```
 
-The longer-term Claim2Core direction is to connect Kubernetes allocation and topology information to that runtime layer, so policy can be based on the workload and the resources it actually received rather than on hand-written process names alone.
+The longer-term Claim2Core direction is to connect Kubernetes allocation and topology information to that runtime layer, so policy can be based on the workload and the resources it actually received rather than on hand-written process names or node-specific CPU IDs alone.
 
 For AI inference, the more interesting future benchmarks are therefore not another synthetic "3×" demonstration. They are scenarios such as:
 
-- default vs static pinning vs Gthulhu under competing fast-core workloads;
+- default vs static pinning vs Gthulhu across heterogeneous node types;
 - moving CPU contention;
 - prefill/decode phase-aware scheduling;
 - priority isolation between multiple inference services;
@@ -356,9 +375,11 @@ The original GB10 experiment showed a dramatic recovery because we intentionally
 
 **CPU scheduling is useful for AI inference when host-side latency-sensitive tasks are being delayed enough to stall accelerator or distributed-system progress.** Under those conditions, both static isolation and workload-aware scheduling can recover meaningful throughput and latency.
 
-But the scheduler is not a general inference accelerator. When the workload is already GPU-, memory-, or network-bound, the effect can be negligible. And when the contention pattern is static, simple CPU pinning may be all that is required.
+Static pinning is therefore valuable evidence, but not necessarily the end state. On a heterogeneous Kubernetes cluster, the hard problem is often deciding and maintaining the right CPU placement for each workload on whichever node it actually runs. That is the layer where workload-aware runtime scheduling can add value beyond a manually tuned `taskset` command.
 
-That gives Gthulhu a clearer research target: not "beat the default scheduler on a permanently overloaded CPU," but **adapt when the workload, priority, contention, and topology change faster than static placement can reasonably follow**.
+When the workload is already GPU-, memory-, or network-bound, however, the effect can still be negligible. The scheduler should be treated as one control point in the inference system, not a general-purpose accelerator.
+
+That gives Gthulhu a clearer research target: **preserve good host-side placement and responsiveness while adapting across workload phases, node topology, contention, and Kubernetes placement changes that static per-node affinity rules cannot easily follow**.
 
 ## Related links
 
