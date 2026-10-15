@@ -128,11 +128,11 @@ Aggregating the decode-focused results:
 | B. Gthulhu | ~19.3 tok/s | ~17.5 tok/s | ~28.3 tok/s | ~126 ms |
 | C. Gthulhu + policy | ~17.8 tok/s | **~21.3 tok/s** | **~29.3 tok/s** | ~169 ms |
 
-![Decode throughput comparison](https://raw.githubusercontent.com/ianchen0119/vllm-project.github.io/post_gthulhu/assets/figures/2026-08-07-vllm-gthulhu/chart_decode.svg)
+![Decode throughput comparison](assets/vllm-gthulhu/chart_decode.svg)
 
-![TTFT comparison](https://raw.githubusercontent.com/ianchen0119/vllm-project.github.io/post_gthulhu/assets/figures/2026-08-07-vllm-gthulhu/chart_ttft.svg)
+![TTFT comparison](assets/vllm-gthulhu/chart_ttft.svg)
 
-These are the same result plots prepared for the original vLLM community blog PR.
+The benchmark figures are stored with this documentation rather than depending on the upstream vLLM PR branch.
 
 ### Why did decode improve while TTFT did not keep improving?
 
@@ -183,7 +183,7 @@ This is a good counterexample to the idea that "more scheduler tuning is always 
 
 ### 2. Under contention, host scheduling became part of the distributed inference bottleneck
 
-Adding CPU spinners reduced default throughput from **23.96 to 17.51 tok/s**, about a **27% drop relative to the idle result** (or roughly 24% when expressed against the contended recovery baseline), and variance increased significantly.
+Adding CPU spinners reduced default throughput from **23.96 to 17.51 tok/s**, about a **27% drop relative to the idle result**, and variance increased significantly.
 
 Simply isolating the vLLM work onto the fast Cortex-X925 cores brought throughput back to **22.34 tok/s** and improved TTFT from **387 ms to 274 ms**.
 
