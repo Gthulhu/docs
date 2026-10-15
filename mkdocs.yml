@@ -21,10 +21,11 @@ nav:
     - How It Works: how-it-works.md
     - Claim2Core: claim2core.md
   - Blog:
+    - All Posts: blog.md
+    - When Does CPU Scheduling Help AI Inference?: vllm-cpu-pressure.md
+    - Hardening Gthulhu Network Security with Istio Ambient Mode: istio.md
     - Improving Network Performance with Custom eBPF-based Schedulers: https://free5gc.org/blog/20250726/index.en/
     - Implementing GTP-driven Automatic Scheduling Optimization with eBPF-based Scheduler: https://free5gc.org/blog/20251126/20251126/
-    - Hardening Gthulhu Network Security with Istio Ambient Mode: istio.md
-    - Keeping vLLM Fast Under CPU Pressure: vllm-cpu-pressure.md
   - Tutorials: https://killercoda.com/gthulhu
   - Demo: https://gthulhu.github.io/Gthulhu/
   - Mentioned: mentioned.md
@@ -94,6 +95,7 @@ plugins:
             API Reference: API 參考
             Troubleshooting: 疑難排解
             Blog: 文章
+            All Posts: 全部文章
             Tutorials: 教學
             Demo: Demo 系統
             Mentioned: 相關報導
