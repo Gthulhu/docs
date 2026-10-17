@@ -2,13 +2,13 @@
 
 <div class="gth-hero" markdown>
 
-## Keep critical workloads fast when CPUs get busy
+## Kubernetes places the workload. Gthulhu controls how it gets CPU time.
 
-Gthulhu is a cloud-native runtime scheduling platform built with eBPF and Linux `sched_ext`. It protects latency- and throughput-sensitive Linux tasks inside Kubernetes workloads when CPU contention would otherwise slow them down.
+Gthulhu bridges **Kubernetes scheduling intent** to **Linux runtime execution**. It resolves a workload down to the processes and threads that matter on each node, then applies bounded CPU scheduling policy with eBPF and Linux `sched_ext`—without replacing `kube-scheduler` or maintaining a kernel fork.
 
 <div class="gth-hero-actions">
 <a href="k8s.md" class="md-button md-button--primary">Get Started</a>
-<a href="https://github.com/Gthulhu/Gthulhu" class="md-button">View on GitHub</a>
+<a href="how-it-works.md" class="md-button">See How It Works</a>
 </div>
 
 </div>
@@ -20,7 +20,7 @@ Gthulhu is a cloud-native runtime scheduling platform built with eBPF and Linux 
 
 ### 97.66% lower average latency
 
-**88.98 ms → 2.079 ms** average UE ping latency under CPU stress.
+In a published CPU-stress case study, average UE ping latency fell from **88.98 ms → 2.079 ms**.
 
 Maximum latency also fell from **130.95 ms → 8.45 ms**.
 
@@ -28,13 +28,13 @@ Maximum latency also fell from **130.95 ms → 8.45 ms**.
 </div>
 
 <div class="gth-proof-card" markdown>
-<span class="gth-proof-eyebrow">vLLM / GPU inference</span>
+<span class="gth-proof-eyebrow">vLLM / host-side scheduling research</span>
 
-### Protect inference from CPU contention
+### Find when CPU scheduling enters the inference critical path
 
-Prioritize CPU-side vLLM engine and feeder threads to keep the GPU execution path responsive when noisy neighbors compete for CPU time.
+Our experiments study how CPU contention affects vLLM engine and feeder threads, and when host-side scheduling can recover performance. Results depend on the workload and bottleneck pattern.
 
-[Review the experimental benchmark and methodology →](https://github.com/vllm-project/vllm-project.github.io/pull/300)
+[Review the benchmark and methodology →](vllm-cpu-pressure.md)
 </div>
 
 </div>
@@ -45,13 +45,28 @@ Prioritize CPU-side vLLM engine and feeder threads to keep the GPU execution pat
 <a href="https://insights.linuxfoundation.org/project/gthulhu"><img src="https://insights.linuxfoundation.org/api/badge/health-score?project=gthulhu" alt="LFX Health Score" /></a>
 </div>
 
-## The problem Gthulhu solves
+## The execution gap after Kubernetes placement
 
 Kubernetes can place a workload on the right node and allocate the right resources. That still does not guarantee the workload's critical Linux threads will get CPU time when they need it.
 
-Under contention, GPU feeder threads, `EngineCore`, packet-processing workers, IRQ-related work, or other latency-sensitive tasks can be delayed by background CPU load. The result is simple: **allocated resources, but missed SLOs**.
+Under contention, GPU feeder threads, `EngineCore`, packet-processing workers, IRQ-related work, or other latency-sensitive tasks can be delayed by background CPU load. The result is simple: **resources were allocated, but the runtime SLO can still be missed**.
 
-Gthulhu closes that execution gap.
+Gthulhu focuses on that execution gap.
+
+## From workload intent to CPU dispatch
+
+![Gthulhu workflow from workload intent to per-node sched_ext CPU dispatch](assets/gthulhu-workflow.gif)
+
+The diagram is easier to read as four steps:
+
+1. **Express intent** — a user or controller creates a scheduling strategy through the Web/API and Kubernetes CRDs.
+2. **Resolve the workload** — the Manager watches Kubernetes state and turns that strategy into policy for the nodes that actually run the workload.
+3. **Decide per node** — each node has its own Decision Maker and Gthulhu Scheduler, so policy is resolved against node-local workload/task state.
+4. **Apply at CPU dispatch** — the node-local scheduler programs the eBPF `sched_ext` layer, which controls dispatch queues and CPU placement.
+
+This keeps the responsibilities separate: Kubernetes remains responsible for **placement and allocation**; Gthulhu is responsible for **how the selected Linux tasks are scheduled at runtime**.
+
+## Observe → target → control
 
 <div class="gth-flow" markdown>
 
@@ -66,7 +81,7 @@ Use `sched_ext` to apply bounded runtime scheduling policy and protect critical 
 
 </div>
 
-> **DRA chooses what and where. Gthulhu controls how it actually runs.**
+> **Kubernetes decides where. Gthulhu controls how CPU time is delivered.**
 
 ## Built for workload-aware runtime scheduling
 
@@ -88,21 +103,32 @@ Use `sched_ext` to apply bounded runtime scheduling policy and protect critical 
 
     ---
 
-    Manager + per-node Decision Makers distribute scheduling intent across Kubernetes nodes.
+    A Manager distributes policy to per-node Decision Makers, keeping execution decisions close to local workload state.
 
--   **SLO-oriented automation**
+-   **Kernel-level control without a kernel fork**
 
     ---
 
-    Feed scheduler signals into Prometheus, Grafana, and KEDA to support runtime-aware operations and scaling.
+    Use Linux `sched_ext` and eBPF to change CPU dispatch behavior while keeping Kubernetes resource boundaries intact.
 
 </div>
 
-[See how Gthulhu works](how-it-works.md){: .md-button }
+[See the architecture in detail](how-it-works.md){: .md-button }
 
-## Where Gthulhu is going: Claim2Core
+## Where it fits
 
-Today, Gthulhu can observe and control Linux task scheduling at runtime. The next step is to connect that control directly to Kubernetes' **actual resource allocation**.
+Gthulhu is most useful when **CPU scheduling becomes part of the workload's critical path**—for example:
+
+- packet-processing and 5G user-plane workloads under CPU pressure;
+- AI / accelerator hosts where CPU-side feeder or engine threads can become a bottleneck;
+- latency-sensitive services with noisy-neighbor contention;
+- scheduler research that needs observable, replaceable runtime policy.
+
+If the workload is GPU-, network-, storage-, or application-bound instead, changing CPU scheduling may not materially improve performance. Gthulhu is designed to make that distinction measurable rather than assume every workload needs a custom scheduler.
+
+## Next: Claim2Core
+
+Today, Gthulhu can observe and control Linux task scheduling at runtime. **Claim2Core** connects that control to Kubernetes' actual resource allocation.
 
 ```text
 Kueue / Workload API
