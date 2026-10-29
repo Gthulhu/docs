@@ -4,13 +4,13 @@ Gthulhu 社群的技術文章、實驗紀錄與專案筆記。
 
 <div class="grid cards" markdown>
 
--   :material-gauge:{ .lg .middle } **Fine-Tuning Gthulhu's Go User-Space Scheduler（英文）**
+-   :material-gauge:{ .lg .middle } **Gthulhu Go User-Space Scheduler 最佳化實錄：真正的瓶頸不只在排程演算法**
 
     ---
 
     從 runnable task stall、ring buffer 交接、BPF dispatch 順序與 Go runtime 開銷切入，說明如何最佳化 user-space scheduler，並通過 `adaptive_priority` 測試。
 
-    [:octicons-arrow-right-24: 閱讀英文文章](userspace-scheduler-optimization.md)
+    [:octicons-arrow-right-24: 閱讀文章](userspace-scheduler-optimization.md)
 
 
 -   :material-brain:{ .lg .middle } **什麼情況下 CPU 排程能改善 AI 推論？**
