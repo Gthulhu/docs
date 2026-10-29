@@ -4,6 +4,15 @@ Technical articles, experiments, and project notes from the Gthulhu community.
 
 <div class="grid cards" markdown>
 
+-   :material-gauge:{ .lg .middle } **Fine-Tuning Gthulhu's Go User-Space Scheduler**
+
+    ---
+
+    How we traced stalled tasks and slow wakeups to ring-buffer handoffs, BPF dispatch ordering, Go runtime crossings, and CPU yielding—then passed the `adaptive_priority` benchmark.
+
+    [:octicons-arrow-right-24: Read article](userspace-scheduler-optimization.md)
+
+
 -   :material-brain:{ .lg .middle } **When Does CPU Scheduling Help AI Inference?**
 
     ---
