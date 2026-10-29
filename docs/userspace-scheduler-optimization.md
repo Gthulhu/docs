@@ -136,4 +136,4 @@ A user-space scheduler is a distributed state machine spanning BPF, shared-memor
 
 Our next step is to evaluate these improvements across more kernels, CPU topologies, and real workloads rather than overgeneralizing from one latency benchmark.
 
-**Dig into the implementation:** [PR #156](https://github.com/Gthulhu/Gthulhu/pull/156) · [Detailed investigation and raw benchmark output](https://github.com/Gthulhu/Gthulhu/blob/15bd5dd0c74c92c60574de7c03a021b538ce5124/SCHEDULER-OPTIMIZATION.md) · [Gthulhu scheduler internals](../how-it-works.md)
+**Dig into the implementation:** [PR #156](https://github.com/Gthulhu/Gthulhu/pull/156) · [Detailed investigation and raw benchmark output](https://github.com/Gthulhu/Gthulhu/blob/15bd5dd0c74c92c60574de7c03a021b538ce5124/SCHEDULER-OPTIMIZATION.md) · [Gthulhu scheduler internals](how-it-works.md)
