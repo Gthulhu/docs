@@ -1,0 +1,827 @@
+
+<!DOCTYPE html>
+
+<html class="no-js" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<meta content="Cloud-native runtime scheduling from Kubernetes allocation to Linux task execution" name="description"/>
+<link href="https://gthulhu.org/userspace-scheduler-optimization/" rel="canonical"/>
+<link href="../blog/" rel="prev"/>
+<link href="../vllm-cpu-pressure/" rel="next"/>
+<link href="../assets/images/favicon.png" rel="icon"/>
+<meta content="mkdocs-1.5.3, mkdocs-material-9.5.17" name="generator"/>
+<title>Fine-Tuning Gthulhu's Go User-Space Scheduler - Gthulhu</title>
+<link href="../assets/stylesheets/main.bcfcd587.min.css" rel="stylesheet"/>
+<link href="../assets/stylesheets/palette.06af60db.min.css" rel="stylesheet"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback" rel="stylesheet"/>
+<style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+<link href="../stylesheets/extra.css" rel="stylesheet"/>
+<script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+<script id="__analytics">function __md_analytics(){function n(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],n("js",new Date),n("config","G-T0RWMB3KJM"),document.addEventListener("DOMContentLoaded",function(){document.forms.search&&document.forms.search.query.addEventListener("blur",function(){this.value&&n("event","search",{search_term:this.value})}),document$.subscribe(function(){var a=document.forms.feedback;if(void 0!==a)for(var e of a.querySelectorAll("[type=submit]"))e.addEventListener("click",function(e){e.preventDefault();var t=document.location.pathname,e=this.getAttribute("data-md-value");n("event","feedback",{page:t,data:e}),a.firstElementChild.disabled=!0;e=a.querySelector(".md-feedback__note [data-md-value='"+e+"']");e&&(e.hidden=!1)}),a.hidden=!1}),location$.subscribe(function(e){n("config","G-T0RWMB3KJM",{page_path:e.pathname})})});var e=document.createElement("script");e.async=!0,e.src="https://www.googletagmanager.com/gtag/js?id=G-T0RWMB3KJM",document.getElementById("__analytics").insertAdjacentElement("afterEnd",e)}</script>
+<script>"undefined"!=typeof __md_analytics&&__md_analytics()</script>
+</head>
+<body data-md-color-accent="indigo" data-md-color-primary="indigo" data-md-color-scheme="default" dir="ltr">
+<input autocomplete="off" class="md-toggle" data-md-toggle="drawer" id="__drawer" type="checkbox"/>
+<input autocomplete="off" class="md-toggle" data-md-toggle="search" id="__search" type="checkbox"/>
+<label class="md-overlay" for="__drawer"></label>
+<div data-md-component="skip">
+<a class="md-skip" href="#fine-tuning-gthulhus-go-user-space-scheduler-the-handoff-matters-more-than-the-algorithm">
+          Skip to content
+        </a>
+</div>
+<div data-md-component="announce">
+<aside class="md-banner">
+<div class="md-banner__inner md-grid md-typeset">
+            
+            
+  🚀 <a href="https://gthulhu.github.io/Gthulhu/" rel="noopener" target="_blank"><strong>Live Demo</strong></a>
+   —  Username: <strong>admin</strong>  /  Password: <strong>admin</strong>
+</div>
+</aside>
+</div>
+<header class="md-header" data-md-component="header">
+<nav aria-label="Header" class="md-header__inner md-grid">
+<a aria-label="Gthulhu" class="md-header__button md-logo" data-md-component="logo" href=".." title="Gthulhu">
+<img alt="logo" src="https://raw.githubusercontent.com/Gthulhu/Gthulhu/main/assets/logo.png"/>
+</a>
+<label class="md-header__button md-icon" for="__drawer">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"></path></svg>
+</label>
+<div class="md-header__title" data-md-component="header-title">
+<div class="md-header__ellipsis">
+<div class="md-header__topic">
+<span class="md-ellipsis">
+            Gthulhu
+          </span>
+</div>
+<div class="md-header__topic" data-md-component="header-topic">
+<span class="md-ellipsis">
+            
+              Fine-Tuning Gthulhu's Go User-Space Scheduler
+            
+          </span>
+</div>
+</div>
+</div>
+<form class="md-header__option" data-md-component="palette">
+<input aria-label="Switch to dark mode" class="md-option" data-md-color-accent="indigo" data-md-color-media="(prefers-color-scheme: light)" data-md-color-primary="indigo" data-md-color-scheme="default" id="__palette_0" name="__palette" type="radio"/>
+<label class="md-header__button md-icon" for="__palette_1" hidden="" title="Switch to dark mode">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5c-.84 0-1.65.15-2.39.42L12 2M3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29L3.34 7m.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14L3.36 17M20.65 7l-1.77 3.79a7.023 7.023 0 0 0-2.38-4.15l4.15.36m-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29L20.64 17M12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44L12 22Z"></path></svg>
+</label>
+<input aria-label="Switch to light mode" class="md-option" data-md-color-accent="indigo" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-primary="indigo" data-md-color-scheme="slate" id="__palette_1" name="__palette" type="radio"/>
+<label class="md-header__button md-icon" for="__palette_0" hidden="" title="Switch to light mode">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3 3.19.09m3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95 2.06.05m-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31Z"></path></svg>
+</label>
+</form>
+<script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+<div class="md-header__option">
+<div class="md-select">
+<button aria-label="Select language" class="md-header__button md-icon">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12.87 15.07-2.54-2.51.03-.03A17.52 17.52 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04M18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12m-2.62 7 1.62-4.33L19.12 17h-3.24Z"></path></svg>
+</button>
+<div class="md-select__inner">
+<ul class="md-select__list">
+<li class="md-select__item">
+<a class="md-select__link" href="./" hreflang="en">
+              English
+            </a>
+</li>
+<li class="md-select__item">
+<a class="md-select__link" href="../zh/userspace-scheduler-optimization/" hreflang="zh">
+              中文
+            </a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<label class="md-header__button md-icon" for="__search">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"></path></svg>
+</label>
+<div class="md-search" data-md-component="search" role="dialog">
+<label class="md-search__overlay" for="__search"></label>
+<div class="md-search__inner" role="search">
+<form class="md-search__form" name="search">
+<input aria-label="Search" autocapitalize="off" autocomplete="off" autocorrect="off" class="md-search__input" data-md-component="search-query" name="query" placeholder="Search" required="" spellcheck="false" type="text"/>
+<label class="md-search__icon md-icon" for="__search">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"></path></svg>
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"></path></svg>
+</label>
+<nav aria-label="Search" class="md-search__options">
+<a aria-label="Share" class="md-search__icon md-icon" data-clipboard="" data-clipboard-text="" data-md-component="search-share" href="javascript:void(0)" tabindex="-1" title="Share">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"></path></svg>
+</a>
+<button aria-label="Clear" class="md-search__icon md-icon" tabindex="-1" title="Clear" type="reset">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"></path></svg>
+</button>
+</nav>
+</form>
+<div class="md-search__output">
+<div class="md-search__scrollwrap" data-md-scrollfix="">
+<div class="md-search-result" data-md-component="search-result">
+<div class="md-search-result__meta">
+            Initializing search
+          </div>
+<ol class="md-search-result__list" role="presentation"></ol>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="md-header__source">
+<a class="md-source" data-md-component="source" href="https://github.com/Gthulhu/Gthulhu" title="Go to repository">
+<div class="md-source__icon md-icon">
+<svg viewbox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"></path></svg>
+</div>
+<div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+</div>
+</nav>
+</header>
+<div class="md-container" data-md-component="container">
+<nav aria-label="Tabs" class="md-tabs" data-md-component="tabs">
+<div class="md-grid">
+<ul class="md-tabs__list">
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="..">
+        
+  
+    
+  
+  Home
+
+      </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../installation/">
+          
+  
+  Get Started
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../how-it-works/">
+          
+  
+  Architecture
+
+        </a>
+</li>
+<li class="md-tabs__item md-tabs__item--active">
+<a class="md-tabs__link" href="../blog/">
+          
+  
+  Blog
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="https://killercoda.com/gthulhu">
+        
+  
+    
+  
+  Tutorials
+
+      </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="https://gthulhu.github.io/Gthulhu/">
+        
+  
+    
+  
+  Demo
+
+      </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../mentioned/">
+        
+  
+    
+  
+  Mentioned
+
+      </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../contributing/">
+        
+  
+    
+  
+  Contributing
+
+      </a>
+</li>
+</ul>
+</div>
+</nav>
+<main class="md-main" data-md-component="main">
+<div class="md-main__inner md-grid">
+<div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav aria-label="Navigation" class="md-nav md-nav--primary md-nav--lifted" data-md-level="0">
+<label class="md-nav__title" for="__drawer">
+<a aria-label="Gthulhu" class="md-nav__button md-logo" data-md-component="logo" href=".." title="Gthulhu">
+<img alt="logo" src="https://raw.githubusercontent.com/Gthulhu/Gthulhu/main/assets/logo.png"/>
+</a>
+    Gthulhu
+  </label>
+<div class="md-nav__source">
+<a class="md-source" data-md-component="source" href="https://github.com/Gthulhu/Gthulhu" title="Go to repository">
+<div class="md-source__icon md-icon">
+<svg viewbox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"></path></svg>
+</div>
+<div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+</div>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="..">
+<span class="md-ellipsis">
+    Home
+  </span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_2" type="checkbox"/>
+<label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+<span class="md-ellipsis">
+    Get Started
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_2_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_2">
+<span class="md-nav__icon md-icon"></span>
+            Get Started
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../installation/">
+<span class="md-ellipsis">
+    Installation
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../k8s/">
+<span class="md-ellipsis">
+    K8s Deployment
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../gui/">
+<span class="md-ellipsis">
+    Configuring the scheduling policies
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../node-policies/">
+<span class="md-ellipsis">
+    Node-level scheduling policies
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../scx-loader/">
+<span class="md-ellipsis">
+    Loading sched_ext schedulers
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../pod-metrics/">
+<span class="md-ellipsis">
+    Pod-Level Scheduling Metrics
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../multi-node/">
+<span class="md-ellipsis">
+    Working with multi-node cluster
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../cli/">
+<span class="md-ellipsis">
+    Debugging with gthulhu-cli
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="https://pkg.go.dev/github.com/Gthulhu/qumun/goland_core">
+<span class="md-ellipsis">
+    API Reference
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../faq/">
+<span class="md-ellipsis">
+    Troubleshooting
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_3" type="checkbox"/>
+<label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+<span class="md-ellipsis">
+    Architecture
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_3_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_3">
+<span class="md-nav__icon md-icon"></span>
+            Architecture
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../how-it-works/">
+<span class="md-ellipsis">
+    How It Works
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../claim2core/">
+<span class="md-ellipsis">
+    Claim2Core
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+<input checked="" class="md-nav__toggle md-toggle" id="__nav_4" type="checkbox"/>
+<label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+<span class="md-ellipsis">
+    Blog
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="true" aria-labelledby="__nav_4_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_4">
+<span class="md-nav__icon md-icon"></span>
+            Blog
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../blog/">
+<span class="md-ellipsis">
+    All Posts
+  </span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--active">
+<input class="md-nav__toggle md-toggle" id="__toc" type="checkbox"/>
+<label class="md-nav__link md-nav__link--active" for="__toc">
+<span class="md-ellipsis">
+    Fine-Tuning Gthulhu's Go User-Space Scheduler
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<a class="md-nav__link md-nav__link--active" href="./">
+<span class="md-ellipsis">
+    Fine-Tuning Gthulhu's Go User-Space Scheduler
+  </span>
+</a>
+<nav aria-label="Table of contents" class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">
+<span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+<ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#how-a-task-reaches-a-cpu">
+<span class="md-ellipsis">
+      How a task reaches a CPU
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#1-make-go-to-c-crossings-cheapbut-never-block-there">
+<span class="md-ellipsis">
+      1. Make Go-to-C crossings cheap—but never block there
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#2-fix-correctness-before-tuning-priorities">
+<span class="md-ellipsis">
+      2. Fix correctness before tuning priorities
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#3-understand-what-adaptive_priority-actually-measures">
+<span class="md-ellipsis">
+      3. Understand what adaptive_priority actually measures
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#4-four-changes-that-closed-the-handoff-gap">
+<span class="md-ellipsis">
+      4. Four changes that closed the handoff gap
+    </span>
+</a>
+<nav aria-label="4. Four changes that closed the handoff gap" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#consume-the-queued-ring-buffer-on-the-pinned-thread">
+<span class="md-ellipsis">
+      Consume the queued ring buffer on the pinned thread
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#drain-completed-decisions-before-scheduling-the-scheduler">
+<span class="md-ellipsis">
+      Drain completed decisions before scheduling the scheduler
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#yield-the-os-thread-after-completing-dispatch">
+<span class="md-ellipsis">
+      Yield the OS thread after completing dispatch
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#separate-the-policy-time-budget-from-the-bpf-fallback-slice">
+<span class="md-ellipsis">
+      Separate the policy time budget from the BPF fallback slice
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#5-results-and-limits">
+<span class="md-ellipsis">
+      5. Results and limits
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#what-we-learned">
+<span class="md-ellipsis">
+      What we learned
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../vllm-cpu-pressure/">
+<span class="md-ellipsis">
+    When Does CPU Scheduling Help AI Inference?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../istio/">
+<span class="md-ellipsis">
+    Hardening Gthulhu Network Security with Istio Ambient Mode
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="https://free5gc.org/blog/20250726/index.en/">
+<span class="md-ellipsis">
+    Improving Network Performance with Custom eBPF-based Schedulers
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="https://free5gc.org/blog/20251126/20251126/">
+<span class="md-ellipsis">
+    Implementing GTP-driven Automatic Scheduling Optimization with eBPF-based Scheduler
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="https://killercoda.com/gthulhu">
+<span class="md-ellipsis">
+    Tutorials
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="https://gthulhu.github.io/Gthulhu/">
+<span class="md-ellipsis">
+    Demo
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../mentioned/">
+<span class="md-ellipsis">
+    Mentioned
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../contributing/">
+<span class="md-ellipsis">
+    Contributing
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</div>
+</div>
+</div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav aria-label="Table of contents" class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">
+<span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+<ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#how-a-task-reaches-a-cpu">
+<span class="md-ellipsis">
+      How a task reaches a CPU
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#1-make-go-to-c-crossings-cheapbut-never-block-there">
+<span class="md-ellipsis">
+      1. Make Go-to-C crossings cheap—but never block there
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#2-fix-correctness-before-tuning-priorities">
+<span class="md-ellipsis">
+      2. Fix correctness before tuning priorities
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#3-understand-what-adaptive_priority-actually-measures">
+<span class="md-ellipsis">
+      3. Understand what adaptive_priority actually measures
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#4-four-changes-that-closed-the-handoff-gap">
+<span class="md-ellipsis">
+      4. Four changes that closed the handoff gap
+    </span>
+</a>
+<nav aria-label="4. Four changes that closed the handoff gap" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#consume-the-queued-ring-buffer-on-the-pinned-thread">
+<span class="md-ellipsis">
+      Consume the queued ring buffer on the pinned thread
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#drain-completed-decisions-before-scheduling-the-scheduler">
+<span class="md-ellipsis">
+      Drain completed decisions before scheduling the scheduler
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#yield-the-os-thread-after-completing-dispatch">
+<span class="md-ellipsis">
+      Yield the OS thread after completing dispatch
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#separate-the-policy-time-budget-from-the-bpf-fallback-slice">
+<span class="md-ellipsis">
+      Separate the policy time budget from the BPF fallback slice
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#5-results-and-limits">
+<span class="md-ellipsis">
+      5. Results and limits
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#what-we-learned">
+<span class="md-ellipsis">
+      What we learned
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</div>
+</div>
+</div>
+<div class="md-content" data-md-component="content">
+<article class="md-content__inner md-typeset">
+<h1 id="fine-tuning-gthulhus-go-user-space-scheduler-the-handoff-matters-more-than-the-algorithm">Fine-Tuning Gthulhu's Go User-Space Scheduler: The Handoff Matters More Than the Algorithm</h1>
+<p>Gthulhu combines Linux <code>sched_ext</code>, eBPF, and Go to make scheduling decisions in user space. This flexibility comes at a cost: every task that crosses the kernel/user-space boundary needs to make it back to a dispatch queue quickly, correctly, and without losing a wakeup.</p>
+<p>We recently investigated an uncomfortable result: our user-space scheduler would occasionally trigger <code>runnable task stall</code> watchdog errors, and the <code>schtest adaptive_priority</code> test reported a score as high as <strong>9.66</strong>, far above its <strong>0.50</strong> pass threshold. After addressing correctness issues and redesigning the handoff, repeated runs scored <strong>0.19–0.22</strong>; <code>scx_rustland</code> scored <strong>0.16</strong> in the comparison setup.</p>
+<p>The important lesson was not that we needed a more sophisticated priority formula. <strong>We needed to stop adding latency between a completed scheduling decision and the moment the kernel could execute it.</strong></p>
+<p>This is a postmortem of the engineering decisions behind <a href="https://github.com/Gthulhu/Gthulhu/pull/156">Gthulhu PR #156</a>, with detailed measurements and traces in the <a href="https://github.com/Gthulhu/Gthulhu/blob/15bd5dd0c74c92c60574de7c03a021b538ce5124/SCHEDULER-OPTIMIZATION.md">optimization report</a>.</p>
+<h2 id="how-a-task-reaches-a-cpu">How a task reaches a CPU</h2>
+<p>The user-space path is intentionally simple to describe:</p>
+<pre class="mermaid"><code>flowchart LR
+  A["Task becomes runnable"] --&gt; B["eBPF: queued ring buffer"]
+  B --&gt; C["Pinned Go scheduler loop"]
+  C --&gt; D["Select CPU / deadline / slice"]
+  D --&gt; E["User ring buffer: dispatch decision"]
+  E --&gt; F["eBPF: ops.dispatch()"]
+  F --&gt; G["Dispatch queue (DSQ)"]
+  G --&gt; H["CPU executes task"]
+</code></pre>
+<p>Every arrow is part of the scheduler's critical path. A fast priority calculation cannot compensate for a delayed ring-buffer consumer, incorrect dispatch ordering, or a scheduler thread that keeps the CPU after making a decision.</p>
+<h2 id="1-make-go-to-c-crossings-cheapbut-never-block-there">1. Make Go-to-C crossings cheap—but never block there</h2>
+<p>The original hot path relied on cgo. Standard <code>runtime.cgocall</code> manages Go runtime transitions into and out of a syscall; repeatedly making these transitions can interrupt a tightly timed scheduler loop. We adopted <code>runtime.asmcgocall</code> through a narrow bridge, pinned the scheduling goroutine with <code>runtime.LockOSThread()</code>, and removed the process-wide <code>GOMAXPROCS(1)</code> restriction so other goroutines could run independently.</p>
+<p>In a <strong>microbenchmark of a 64-bit read</strong>, on an Intel Xeon Platinum 8272CL with Linux 6.14 and Go 1.25.0, we measured:</p>
+<table>
+<thead>
+<tr>
+<th>Access path</th>
+<th style="text-align: right;">Time per operation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Standard cgo</td>
+<td style="text-align: right;">219.6–228.1 ns</td>
+</tr>
+<tr>
+<td><code>asmcgocall</code> bridge</td>
+<td style="text-align: right;">20.72–21.28 ns</td>
+</tr>
+<tr>
+<td>Go atomic load from mapped BPF state</td>
+<td style="text-align: right;">1.13–1.37 ns</td>
+</tr>
+</tbody>
+</table>
+<p>This is roughly a <strong>10× reduction in cross-language call overhead for this microbenchmark</strong>, <em>not</em> a 10× improvement in scheduler throughput or application performance. We also switched pure counter reads to atomic loads, avoiding C calls altogether.</p>
+<p>There is an important constraint: <code>asmcgocall</code> bypasses the usual cgo syscall bookkeeping. Its C wrappers must remain <strong>short and nonblocking</strong>. No sleeping ring-buffer polling, Go callbacks, or Go-pointer ownership surprises belong there. The bridge uses POD-style arguments, explicit lifetime management, and compile-time ABI checks.</p>
+<p>When traces initially showed <code>SelectCPU</code> wall times of 4–12 ms but only 4–48 µs of thread CPU time, that was a clue: much of the tail was <strong>off-CPU delay</strong>, not computation inside the C function.</p>
+<h2 id="2-fix-correctness-before-tuning-priorities">2. Fix correctness before tuning priorities</h2>
+<p>We found several independent issues that could make runnable tasks stall.</p>
+<p><strong>Symmetric filtering for scheduler threads.</strong> After allowing more Go runtime OS threads to run, the BPF <code>running</code>, <code>stopping</code>, and <code>tick</code> hooks disagreed about which scheduler threads to exclude. One path filtered only the primary TID while another filtered the entire TGID. This corrupted <code>nr_running</code> and could trigger spurious preemption/watchdog behavior. We made the filtering consistent.</p>
+<p><strong>Do not return from dispatch without actually moving work.</strong> The old <code>ops.dispatch()</code> could attempt to move a scheduler thread from <code>SCHED_DSQ</code> and immediately return even when no thread was moved. That skipped other available DSQs. The corrected path keeps trying useful queues when the move did not succeed.</p>
+<p><strong>Publish accounting before publishing the task.</strong> The old enqueue sequence was effectively:</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-0-1" id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="n">bpf_ringbuf_submit</span><span class="p">(</span><span class="n">task</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<a href="#__codelineno-0-2" id="__codelineno-0-2" name="__codelineno-0-2"></a><span class="n">__sync_fetch_and_add</span><span class="p">(</span><span class="o">&amp;</span><span class="n">nr_queued</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+</code></pre></div>
+<p>A consumer could observe the new record before seeing its count increment, leading to an inconsistent drain decision and lost work. We changed the ordering to update <code>nr_queued</code> <strong>before</strong> publishing the ring-buffer record and added a regression test. This addresses the specific producer/consumer protocol in Gthulhu; it is not a general replacement for reasoning about memory ordering in every ring-buffer design.</p>
+<p><strong>Make sure the tested BPF is the built BPF.</strong> During debugging, <code>Makefile</code> generated a skeleton at a different path from the one included by the wrapper. Together with Go's cache behavior around a separately built static library, this meant code edits could appear to have no effect. Fixing the skeleton destination and rebuilding the wrapper removed that source of misleading experiments.</p>
+<h2 id="3-understand-what-adaptive_priority-actually-measures">3. Understand what <code>adaptive_priority</code> actually measures</h2>
+<p>The test pits a frequently waking <strong>Fast</strong> worker against a CPU-intensive <strong>Slow</strong> worker, pinned to the same logical CPU. In the reported setup, the Fast worker busy-spins for about 100 µs and sleeps for 9.9 ms; the Slow worker busy-spins for about 10 ms.</p>
+<p>The score is:</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-1-1" id="__codelineno-1-1" name="__codelineno-1-1"></a>adaptive_priority metric =
+<a href="#__codelineno-1-2" id="__codelineno-1-2" name="__codelineno-1-2"></a>    p90(Fast wake latency) / p90(Slow wake latency)
+<a href="#__codelineno-1-3" id="__codelineno-1-3" name="__codelineno-1-3"></a>
+<a href="#__codelineno-1-4" id="__codelineno-1-4" name="__codelineno-1-4"></a>PASS if metric &lt; 0.50
+</code></pre></div>
+<p><strong>Lower is better</strong>, but it is a <em>relative wakeup-latency ratio</em>, not CPU throughput, a universal latency percentile, or a percentage improvement in real workloads.</p>
+<p>Our first attempt preserved each task's <strong>full previous runnable burst</strong> rather than just its last time slice, recognized short waking tasks in Go, and gave qualifying tasks an earlier deadline with a preemption request. This exposed another issue: a 100 µs minimum-runtime guard rejected one-shot preemption requests without retry. Removing that guard reduced the metric from <strong>9.66 to roughly 0.88–0.95</strong>, but still did not pass.</p>
+<p>The remaining gap was architectural.</p>
+<h2 id="4-four-changes-that-closed-the-handoff-gap">4. Four changes that closed the handoff gap</h2>
+<p>We compared the actual scheduling sequence with <code>scx_rustland</code> and identified four cooperating changes.</p>
+<h3 id="consume-the-queued-ring-buffer-on-the-pinned-thread">Consume the queued ring buffer on the pinned thread</h3>
+<p>Previously, a background <code>libbpfgo</code> goroutine polled the queued ring buffer, ran a callback, copied data, and forwarded it over a Go channel before the scheduling loop saw a task.</p>
+<p>Now the pinned loop calls a <strong>nonblocking</strong> <code>ring_buffer__consume_n(..., 1)</code> wrapper and copies the queued task directly into a bounded C buffer. This avoids channel handoff latency and makes the scheduler's ownership of work more predictable.</p>
+<h3 id="drain-completed-decisions-before-scheduling-the-scheduler">Drain completed decisions before scheduling the scheduler</h3>
+<p>Previously, BPF could prioritize moving the user-space scheduler thread back onto a CPU before consuming <strong>already completed</strong> decisions in the dispatched user ring buffer.</p>
+<p>Now <code>ops.dispatch()</code> first drains those user-space decisions, then considers <code>SCHED_DSQ</code>. A task that has already been selected should not wait behind another round trip through the scheduler.</p>
+<h3 id="yield-the-os-thread-after-completing-dispatch">Yield the OS thread after completing dispatch</h3>
+<p>After the Go loop flushes its decisions and marks the batch complete—or finds no work—it invokes Linux <code>sched_yield</code> so the kernel can schedule the newly dispatched tasks. <code>runtime.Gosched()</code> would only yield within the Go runtime and is not equivalent.</p>
+<p>This change is inseparable from the BPF dispatch order: <strong>direct consumption plus yielding alone</strong>, without draining the dispatched ring buffer first, produced an especially bad <strong>24.48</strong> test score. The parts need to work together.</p>
+<h3 id="separate-the-policy-time-budget-from-the-bpf-fallback-slice">Separate the policy time budget from the BPF fallback slice</h3>
+<p>We kept the <strong>20 ms</strong> user-space scheduling budget used by deadline/vruntime logic, but set the BPF backend default slice to <strong>1 ms</strong>. The previous 20 ms BPF default also applied to fallback and slice-replenishment situations, where it delayed opportunities to reconsider runnable work. The two knobs serve different purposes and should not be conflated.</p>
+<h2 id="5-results-and-limits">5. Results and limits</h2>
+<p>The following are <strong>reported runs from the same Linux 6.14.0-37-generic, four-logical-CPU test environment</strong>, using <code>schtest adaptive_priority</code>. Scores are illustrative measurements from this development investigation, not cross-hardware guarantees.</p>
+<table>
+<thead>
+<tr>
+<th>Scheduler / stage</th>
+<th style="text-align: right;">Metric</th>
+<th>Outcome</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Original Gthulhu</td>
+<td style="text-align: right;">5.70–9.66</td>
+<td>Fail</td>
+</tr>
+<tr>
+<td>After removing the un-retried 100 µs guard, before handoff redesign</td>
+<td style="text-align: right;">0.88–1.00</td>
+<td>Fail</td>
+</tr>
+<tr>
+<td>Direct ring-buffer + yield, without BPF drain-first ordering</td>
+<td style="text-align: right;">24.48</td>
+<td>Fail</td>
+</tr>
+<tr>
+<td>Optimized Gthulhu, <code>builtin_idle=false</code></td>
+<td style="text-align: right;">0.19, 0.21, 0.22</td>
+<td>Pass</td>
+</tr>
+<tr>
+<td>Optimized Gthulhu, <code>builtin_idle=true</code></td>
+<td style="text-align: right;">0.20 (5s batch: 0.22)</td>
+<td>Pass</td>
+</tr>
+<tr>
+<td><code>scx_rustland</code>, <code>builtin_idle=true</code></td>
+<td style="text-align: right;">0.16</td>
+<td>Pass</td>
+</tr>
+</tbody>
+</table>
+<p>Under the aligned <code>builtin_idle=true</code> condition, the observed Fast wakeup distribution's reported center was about <strong>13.4 µs</strong> with Gthulhu versus <strong>11.2 µs</strong> with <code>scx_rustland</code>. A separate <code>schtest --filter fairness</code> run for the optimized configuration reported <strong>0.98</strong>, above its <strong>0.60</strong> threshold.</p>
+<p>These findings show that Gthulhu's <strong>Go user-space mode can pass this targeted latency/fairness test</strong> while retaining Go-based scheduling decisions. They do <strong>not</strong> establish parity on every workload, production-wide reliability, or general application speedups. Kernel version, CPU affinity, topology, configuration, contention, and future code changes matter.</p>
+<h2 id="what-we-learned">What we learned</h2>
+<p>A user-space scheduler is a distributed state machine spanning BPF, shared-memory/ring-buffer interfaces, the language runtime, and the Linux scheduler itself. Debugging it requires more than timing the scheduling function.</p>
+<ul>
+<li>Measure <strong>wall time and thread CPU time</strong> separately to distinguish computation from off-CPU latency.</li>
+<li>Treat queue counters, publication order, and dispatch queues as a single <strong>correctness protocol</strong>.</li>
+<li>When a decision has been made, <strong>dispatch it before asking the decision maker to run again</strong>.</li>
+<li>Make explicit when the user-space scheduler should <strong>give the CPU back</strong>.</li>
+<li>Verify the actual compiled BPF and measure results against a well-defined benchmark.</li>
+</ul>
+<p>Our next step is to evaluate these improvements across more kernels, CPU topologies, and real workloads rather than overgeneralizing from one latency benchmark.</p>
+<p><strong>Dig into the implementation:</strong> <a href="https://github.com/Gthulhu/Gthulhu/pull/156">PR #156</a> · <a href="https://github.com/Gthulhu/Gthulhu/blob/15bd5dd0c74c92c60574de7c03a021b538ce5124/SCHEDULER-OPTIMIZATION.md">Detailed investigation and raw benchmark output</a> · <a href="../how-it-works/">Gthulhu scheduler internals</a></p>
+</article>
+</div>
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+</div>
+<button class="md-top md-icon" data-md-component="top" hidden="" type="button">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"></path></svg>
+  Back to top
+</button>
+</main>
+<footer class="md-footer">
+<div class="md-footer-meta md-typeset">
+<div class="md-footer-meta__inner md-grid">
+<div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" rel="noopener" target="_blank">
+      Material for MkDocs
+    </a>
+</div>
+</div>
+</div>
+</footer>
+</div>
+<div class="md-dialog" data-md-component="dialog">
+<div class="md-dialog__inner md-typeset"></div>
+</div>
+<script id="__config" type="application/json">{"base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "search.highlight", "search.share", "content.code.copy", "content.code.annotate"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+<script src="../assets/javascripts/bundle.1e8ae164.min.js"></script>
+<script type="module">import mermaid from "https://unpkg.com/mermaid@10.4.0/dist/mermaid.esm.min.mjs";
+window.mermaidConfig = {default: {
+    startOnLoad: false
+}};</script></body>
+</html>

@@ -1,0 +1,937 @@
+
+<!DOCTYPE html>
+
+<html class="no-js" lang="zh">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<meta content="Cloud-native runtime scheduling from Kubernetes allocation to Linux task execution" name="description"/>
+<link href="https://gthulhu.org/zh/userspace-scheduler-optimization/" rel="canonical"/>
+<link href="../blog/" rel="prev"/>
+<link href="../vllm-cpu-pressure/" rel="next"/>
+<link href="../../assets/images/favicon.png" rel="icon"/>
+<meta content="mkdocs-1.5.3, mkdocs-material-9.5.17" name="generator"/>
+<title>Gthulhu Go User-Space Scheduler 最佳化實錄 - Gthulhu</title>
+<link href="../../assets/stylesheets/main.bcfcd587.min.css" rel="stylesheet"/>
+<link href="../../assets/stylesheets/palette.06af60db.min.css" rel="stylesheet"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback" rel="stylesheet"/>
+<style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+<link href="../../stylesheets/extra.css" rel="stylesheet"/>
+<script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+<script id="__analytics">function __md_analytics(){function n(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],n("js",new Date),n("config","G-T0RWMB3KJM"),document.addEventListener("DOMContentLoaded",function(){document.forms.search&&document.forms.search.query.addEventListener("blur",function(){this.value&&n("event","search",{search_term:this.value})}),document$.subscribe(function(){var a=document.forms.feedback;if(void 0!==a)for(var e of a.querySelectorAll("[type=submit]"))e.addEventListener("click",function(e){e.preventDefault();var t=document.location.pathname,e=this.getAttribute("data-md-value");n("event","feedback",{page:t,data:e}),a.firstElementChild.disabled=!0;e=a.querySelector(".md-feedback__note [data-md-value='"+e+"']");e&&(e.hidden=!1)}),a.hidden=!1}),location$.subscribe(function(e){n("config","G-T0RWMB3KJM",{page_path:e.pathname})})});var e=document.createElement("script");e.async=!0,e.src="https://www.googletagmanager.com/gtag/js?id=G-T0RWMB3KJM",document.getElementById("__analytics").insertAdjacentElement("afterEnd",e)}</script>
+<script>"undefined"!=typeof __md_analytics&&__md_analytics()</script>
+</head>
+<body data-md-color-accent="indigo" data-md-color-primary="indigo" data-md-color-scheme="default" dir="ltr">
+<input autocomplete="off" class="md-toggle" data-md-toggle="drawer" id="__drawer" type="checkbox"/>
+<input autocomplete="off" class="md-toggle" data-md-toggle="search" id="__search" type="checkbox"/>
+<label class="md-overlay" for="__drawer"></label>
+<div data-md-component="skip">
+<a class="md-skip" href="#gthulhu-go-user-space-scheduler">
+          跳转至
+        </a>
+</div>
+<div data-md-component="announce">
+<aside class="md-banner">
+<div class="md-banner__inner md-grid md-typeset">
+            
+            
+  🚀 <a href="https://gthulhu.github.io/Gthulhu/" rel="noopener" target="_blank"><strong>Live Demo</strong></a>
+   —  Username: <strong>admin</strong>  /  Password: <strong>admin</strong>
+</div>
+</aside>
+</div>
+<header class="md-header" data-md-component="header">
+<nav aria-label="页眉" class="md-header__inner md-grid">
+<a aria-label="Gthulhu" class="md-header__button md-logo" data-md-component="logo" href="../" title="Gthulhu">
+<img alt="logo" src="https://raw.githubusercontent.com/Gthulhu/Gthulhu/main/assets/logo.png"/>
+</a>
+<label class="md-header__button md-icon" for="__drawer">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"></path></svg>
+</label>
+<div class="md-header__title" data-md-component="header-title">
+<div class="md-header__ellipsis">
+<div class="md-header__topic">
+<span class="md-ellipsis">
+            Gthulhu
+          </span>
+</div>
+<div class="md-header__topic" data-md-component="header-topic">
+<span class="md-ellipsis">
+            
+              Gthulhu Go User-Space Scheduler 最佳化實錄
+            
+          </span>
+</div>
+</div>
+</div>
+<form class="md-header__option" data-md-component="palette">
+<input aria-label="Switch to dark mode" class="md-option" data-md-color-accent="indigo" data-md-color-media="(prefers-color-scheme: light)" data-md-color-primary="indigo" data-md-color-scheme="default" id="__palette_0" name="__palette" type="radio"/>
+<label class="md-header__button md-icon" for="__palette_1" hidden="" title="Switch to dark mode">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5c-.84 0-1.65.15-2.39.42L12 2M3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29L3.34 7m.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14L3.36 17M20.65 7l-1.77 3.79a7.023 7.023 0 0 0-2.38-4.15l4.15.36m-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29L20.64 17M12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44L12 22Z"></path></svg>
+</label>
+<input aria-label="Switch to light mode" class="md-option" data-md-color-accent="indigo" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-primary="indigo" data-md-color-scheme="slate" id="__palette_1" name="__palette" type="radio"/>
+<label class="md-header__button md-icon" for="__palette_0" hidden="" title="Switch to light mode">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3 3.19.09m3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95 2.06.05m-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31Z"></path></svg>
+</label>
+</form>
+<script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+<div class="md-header__option">
+<div class="md-select">
+<button aria-label="选择当前语言" class="md-header__button md-icon">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12.87 15.07-2.54-2.51.03-.03A17.52 17.52 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04M18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12m-2.62 7 1.62-4.33L19.12 17h-3.24Z"></path></svg>
+</button>
+<div class="md-select__inner">
+<ul class="md-select__list">
+<li class="md-select__item">
+<a class="md-select__link" href="../../userspace-scheduler-optimization/" hreflang="en">
+              English
+            </a>
+</li>
+<li class="md-select__item">
+<a class="md-select__link" href="./" hreflang="zh">
+              中文
+            </a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<label class="md-header__button md-icon" for="__search">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"></path></svg>
+</label>
+<div class="md-search" data-md-component="search" role="dialog">
+<label class="md-search__overlay" for="__search"></label>
+<div class="md-search__inner" role="search">
+<form class="md-search__form" name="search">
+<input aria-label="搜索" autocapitalize="off" autocomplete="off" autocorrect="off" class="md-search__input" data-md-component="search-query" name="query" placeholder="搜索" required="" spellcheck="false" type="text"/>
+<label class="md-search__icon md-icon" for="__search">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"></path></svg>
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"></path></svg>
+</label>
+<nav aria-label="查找" class="md-search__options">
+<a aria-label="分享" class="md-search__icon md-icon" data-clipboard="" data-clipboard-text="" data-md-component="search-share" href="javascript:void(0)" tabindex="-1" title="分享">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"></path></svg>
+</a>
+<button aria-label="清空当前内容" class="md-search__icon md-icon" tabindex="-1" title="清空当前内容" type="reset">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"></path></svg>
+</button>
+</nav>
+</form>
+<div class="md-search__output">
+<div class="md-search__scrollwrap" data-md-scrollfix="">
+<div class="md-search-result" data-md-component="search-result">
+<div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+<ol class="md-search-result__list" role="presentation"></ol>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="md-header__source">
+<a class="md-source" data-md-component="source" href="https://github.com/Gthulhu/Gthulhu" title="前往仓库">
+<div class="md-source__icon md-icon">
+<svg viewbox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"></path></svg>
+</div>
+<div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+</div>
+</nav>
+</header>
+<div class="md-container" data-md-component="container">
+<nav aria-label="标签" class="md-tabs" data-md-component="tabs">
+<div class="md-grid">
+<ul class="md-tabs__list">
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../">
+        
+  
+    
+  
+  首頁
+
+      </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../installation/">
+          
+  
+  開始使用
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../how-it-works/">
+          
+  
+  架構
+
+        </a>
+</li>
+<li class="md-tabs__item md-tabs__item--active">
+<a class="md-tabs__link" href="../blog/">
+          
+  
+  文章
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="https://killercoda.com/gthulhu">
+        
+  
+    
+  
+  教學
+
+      </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="https://gthulhu.github.io/Gthulhu/">
+        
+  
+    
+  
+  Demo 系統
+
+      </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../mentioned/">
+        
+  
+    
+  
+  相關報導
+
+      </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../contributing/">
+        
+  
+    
+  
+  貢獻指南
+
+      </a>
+</li>
+</ul>
+</div>
+</nav>
+<main class="md-main" data-md-component="main">
+<div class="md-main__inner md-grid">
+<div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav aria-label="导航栏" class="md-nav md-nav--primary md-nav--lifted" data-md-level="0">
+<label class="md-nav__title" for="__drawer">
+<a aria-label="Gthulhu" class="md-nav__button md-logo" data-md-component="logo" href="../" title="Gthulhu">
+<img alt="logo" src="https://raw.githubusercontent.com/Gthulhu/Gthulhu/main/assets/logo.png"/>
+</a>
+    Gthulhu
+  </label>
+<div class="md-nav__source">
+<a class="md-source" data-md-component="source" href="https://github.com/Gthulhu/Gthulhu" title="前往仓库">
+<div class="md-source__icon md-icon">
+<svg viewbox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"></path></svg>
+</div>
+<div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+</div>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../">
+<span class="md-ellipsis">
+    首頁
+  </span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_2" type="checkbox"/>
+<label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+<span class="md-ellipsis">
+    開始使用
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_2_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_2">
+<span class="md-nav__icon md-icon"></span>
+            開始使用
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../installation/">
+<span class="md-ellipsis">
+    安裝
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../k8s/">
+<span class="md-ellipsis">
+    K8s 部署
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../gui/">
+<span class="md-ellipsis">
+    設定排程策略
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../node-policies/">
+<span class="md-ellipsis">
+    Node-level 排程策略
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../scx-loader/">
+<span class="md-ellipsis">
+    載入 sched_ext 排程器
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../pod-metrics/">
+<span class="md-ellipsis">
+    Pod 級排程指標
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../multi-node/">
+<span class="md-ellipsis">
+    多節點叢集
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../cli/">
+<span class="md-ellipsis">
+    使用 gthulhu-cli 除錯
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="https://pkg.go.dev/github.com/Gthulhu/qumun/goland_core">
+<span class="md-ellipsis">
+    API 參考
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../faq/">
+<span class="md-ellipsis">
+    疑難排解
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_3" type="checkbox"/>
+<label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+<span class="md-ellipsis">
+    架構
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_3_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_3">
+<span class="md-nav__icon md-icon"></span>
+            架構
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../how-it-works/">
+<span class="md-ellipsis">
+    運作原理
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../claim2core/">
+<span class="md-ellipsis">
+    Claim2Core
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+<input checked="" class="md-nav__toggle md-toggle" id="__nav_4" type="checkbox"/>
+<label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+<span class="md-ellipsis">
+    文章
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="true" aria-labelledby="__nav_4_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_4">
+<span class="md-nav__icon md-icon"></span>
+            文章
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../blog/">
+<span class="md-ellipsis">
+    全部文章
+  </span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--active">
+<input class="md-nav__toggle md-toggle" id="__toc" type="checkbox"/>
+<label class="md-nav__link md-nav__link--active" for="__toc">
+<span class="md-ellipsis">
+    Gthulhu Go User-Space Scheduler 最佳化實錄
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<a class="md-nav__link md-nav__link--active" href="./">
+<span class="md-ellipsis">
+    Gthulhu Go User-Space Scheduler 最佳化實錄
+  </span>
+</a>
+<nav aria-label="目录" class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">
+<span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+<ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#runnable">
+<span class="md-ellipsis">
+      從 Runnable 到真正執行，經過哪些步驟？
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#1-go-c-hot-path">
+<span class="md-ellipsis">
+      1. 降低 Go 到 C 的呼叫成本，但不能讓 Hot Path 阻塞
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#2">
+<span class="md-ellipsis">
+      2. 優化效能之前，先把排程正確性修好
+    </span>
+</a>
+<nav aria-label="2. 優化效能之前，先把排程正確性修好" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#scheduler-thread-filtering">
+<span class="md-ellipsis">
+      Scheduler Thread Filtering 不一致
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#task-dispatch">
+<span class="md-ellipsis">
+      沒有成功移動 Task，卻提早從 Dispatch 返回
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#ring-buffer-publication-queue-counter-race-condition">
+<span class="md-ellipsis">
+      Ring Buffer Publication 與 Queue Counter 的 Race Condition
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#bpf-bpf">
+<span class="md-ellipsis">
+      實際執行的 BPF，未必是剛剛修改的 BPF
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#3-adaptive_priority">
+<span class="md-ellipsis">
+      3. 為什麼 adaptive_priority 過不了？
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#4-handoff">
+<span class="md-ellipsis">
+      4. 四項需要互相配合的 Handoff 最佳化
+    </span>
+</a>
+<nav aria-label="4. 四項需要互相配合的 Handoff 最佳化" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#41-pinned-scheduler-loop-ring-buffer">
+<span class="md-ellipsis">
+      4.1 由 Pinned Scheduler Loop 直接消費 Ring Buffer
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#42-bpf-drain-dispatch-decision">
+<span class="md-ellipsis">
+      4.2 BPF 先 Drain 已完成的 Dispatch Decision
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#43-dispatch-yield-os-thread">
+<span class="md-ellipsis">
+      4.3 完成 Dispatch 後，主動 Yield OS Thread
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#44-user-space-scheduling-budget-bpf-backend-slice">
+<span class="md-ellipsis">
+      4.4 分開 User-Space Scheduling Budget 與 BPF Backend Slice
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#5">
+<span class="md-ellipsis">
+      5. 實驗結果：從失敗到通過
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#6">
+<span class="md-ellipsis">
+      6. 這次學到了什麼？
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../vllm-cpu-pressure/">
+<span class="md-ellipsis">
+    When Does CPU Scheduling Help AI Inference?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../istio/">
+<span class="md-ellipsis">
+    Hardening Gthulhu Network Security with Istio Ambient Mode
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="https://free5gc.org/blog/20250726/index.en/">
+<span class="md-ellipsis">
+    Improving Network Performance with Custom eBPF-based Schedulers
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="https://free5gc.org/blog/20251126/20251126/">
+<span class="md-ellipsis">
+    Implementing GTP-driven Automatic Scheduling Optimization with eBPF-based Scheduler
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="https://killercoda.com/gthulhu">
+<span class="md-ellipsis">
+    教學
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="https://gthulhu.github.io/Gthulhu/">
+<span class="md-ellipsis">
+    Demo 系統
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../mentioned/">
+<span class="md-ellipsis">
+    相關報導
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../contributing/">
+<span class="md-ellipsis">
+    貢獻指南
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</div>
+</div>
+</div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav aria-label="目录" class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">
+<span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+<ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#runnable">
+<span class="md-ellipsis">
+      從 Runnable 到真正執行，經過哪些步驟？
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#1-go-c-hot-path">
+<span class="md-ellipsis">
+      1. 降低 Go 到 C 的呼叫成本，但不能讓 Hot Path 阻塞
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#2">
+<span class="md-ellipsis">
+      2. 優化效能之前，先把排程正確性修好
+    </span>
+</a>
+<nav aria-label="2. 優化效能之前，先把排程正確性修好" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#scheduler-thread-filtering">
+<span class="md-ellipsis">
+      Scheduler Thread Filtering 不一致
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#task-dispatch">
+<span class="md-ellipsis">
+      沒有成功移動 Task，卻提早從 Dispatch 返回
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#ring-buffer-publication-queue-counter-race-condition">
+<span class="md-ellipsis">
+      Ring Buffer Publication 與 Queue Counter 的 Race Condition
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#bpf-bpf">
+<span class="md-ellipsis">
+      實際執行的 BPF，未必是剛剛修改的 BPF
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#3-adaptive_priority">
+<span class="md-ellipsis">
+      3. 為什麼 adaptive_priority 過不了？
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#4-handoff">
+<span class="md-ellipsis">
+      4. 四項需要互相配合的 Handoff 最佳化
+    </span>
+</a>
+<nav aria-label="4. 四項需要互相配合的 Handoff 最佳化" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#41-pinned-scheduler-loop-ring-buffer">
+<span class="md-ellipsis">
+      4.1 由 Pinned Scheduler Loop 直接消費 Ring Buffer
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#42-bpf-drain-dispatch-decision">
+<span class="md-ellipsis">
+      4.2 BPF 先 Drain 已完成的 Dispatch Decision
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#43-dispatch-yield-os-thread">
+<span class="md-ellipsis">
+      4.3 完成 Dispatch 後，主動 Yield OS Thread
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#44-user-space-scheduling-budget-bpf-backend-slice">
+<span class="md-ellipsis">
+      4.4 分開 User-Space Scheduling Budget 與 BPF Backend Slice
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#5">
+<span class="md-ellipsis">
+      5. 實驗結果：從失敗到通過
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#6">
+<span class="md-ellipsis">
+      6. 這次學到了什麼？
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</div>
+</div>
+</div>
+<div class="md-content" data-md-component="content">
+<article class="md-content__inner md-typeset">
+<h1 id="gthulhu-go-user-space-scheduler">Gthulhu Go User-Space Scheduler 最佳化實錄：真正的瓶頸不只在排程演算法</h1>
+<p>Gthulhu 透過 Linux <code>sched_ext</code>、eBPF 與 Go，讓排程決策可以在 User Space 執行。這種架構提供了策略上的彈性，但也帶來一個必須面對的問題：每個進入 User Space 的 Runnable Task，最終都必須正確且迅速地回到 Kernel 的 Dispatch Queue（DSQ），才能真正取得 CPU。</p>
+<p>最近我們在調校 User-Space Mode 時遇到一個有趣的現象：一方面，<code>sched_ext</code> 偶爾回報 <code>runnable task stall</code>；另一方面，<code>schtest adaptive_priority</code> 的分數最高來到 <strong>9.66</strong>，遠高於通過門檻 <strong>0.50</strong>。修正底層問題並重新整理排程交接流程後，多次測試得到 <strong>0.19–0.22</strong>，同環境下 <code>scx_rustland</code> 的對照結果為 <strong>0.16</strong>。</p>
+<p>這次最大的收穫並不是找到一套更聰明的 Priority Algorithm，而是發現：<strong>就算 Go 已經完成排程決策，只要 Kernel 與 User Space 之間的 Handoff 不順暢，Task 還是得不到 CPU。</strong></p>
+<p>本文整理 <a href="https://github.com/Gthulhu/Gthulhu/pull/156">Gthulhu PR #156</a> 的主要設計與除錯經驗。更完整的 Trace、實驗紀錄與原始輸出，可參考 <a href="https://github.com/Gthulhu/Gthulhu/blob/15bd5dd0c74c92c60574de7c03a021b538ce5124/SCHEDULER-OPTIMIZATION.md">Scheduler Optimization Report</a>。</p>
+<h2 id="runnable">從 Runnable 到真正執行，經過哪些步驟？</h2>
+<pre class="mermaid"><code>flowchart LR
+  A["Task 變成 Runnable"] --&gt; B["eBPF: queued ring buffer"]
+  B --&gt; C["Pinned Go scheduler loop"]
+  C --&gt; D["Select CPU / deadline / slice"]
+  D --&gt; E["User ring buffer: dispatch decision"]
+  E --&gt; F["eBPF: ops.dispatch()"]
+  F --&gt; G["Dispatch Queue (DSQ)"]
+  G --&gt; H["CPU 執行 Task"]
+</code></pre>
+<p>這條路徑上的每個環節都有成本。即使 Priority 計算只花幾個微秒，如果 Ring Buffer Consumer 需要經過其他 Goroutine 才能收到任務，或者 BPF 一直把 Scheduler 排回 CPU 而不先處理已完成的決策，最後的 Wakeup Latency 仍然不理想。</p>
+<h2 id="1-go-c-hot-path">1. 降低 Go 到 C 的呼叫成本，但不能讓 Hot Path 阻塞</h2>
+<p>最初的 Hot Path 透過標準 cgo 呼叫 C Wrapper。標準的 <code>runtime.cgocall</code> 涉及 Go Runtime 的 Syscall 狀態管理；對於不斷跨越 Go/C 邊界的排程迴圈，這些開銷不容忽視。</p>
+<p>我們做了幾項調整：</p>
+<ul>
+<li>使用 <code>runtime.LockOSThread()</code>，讓核心排程迴圈固定在同一個 OS Thread 上；</li>
+<li>移除整個程序的 <code>GOMAXPROCS(1)</code> 限制，避免 Metrics、GC 與其他 Goroutine 只能和排程迴圈搶同一個 P；</li>
+<li>透過受控的 <code>runtime.asmcgocall</code> Bridge 執行短小的 C Hot Path；</li>
+<li>對只需要讀取的 BPF 映射計數器，直接使用 Go Atomic Load，省掉跨語言呼叫。</li>
+</ul>
+<p>在 Intel Xeon Platinum 8272CL、Linux 6.14、Go 1.25.0 上，針對單次 64-bit 數值讀取的 Microbenchmark，結果如下：</p>
+<table>
+<thead>
+<tr>
+<th>呼叫方式</th>
+<th style="text-align: right;">每次操作耗時</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>標準 cgo</td>
+<td style="text-align: right;">219.6–228.1 ns</td>
+</tr>
+<tr>
+<td><code>asmcgocall</code> Bridge</td>
+<td style="text-align: right;">20.72–21.28 ns</td>
+</tr>
+<tr>
+<td>Go Atomic Load</td>
+<td style="text-align: right;">1.13–1.37 ns</td>
+</tr>
+</tbody>
+</table>
+<p>這代表<strong>該 Microbenchmark 的跨語言呼叫成本約降低 10 倍</strong>，並不代表整個 Scheduler 或 Application 快了 10 倍。</p>
+<p><code>asmcgocall</code> 也不是可以無限制使用的捷徑。它沒有標準 cgo 的 Syscall 交接流程，因此 C Wrapper 必須維持短小、非阻塞；不能拿來做 Sleep/Polling、回呼 Go，或隨意傳遞具有複雜生命週期的 Go Pointer。這次也加上跨語言結構的 ABI Compile-Time Check。</p>
+<p>我們還利用 Wall Time 與 Thread CPU Time 交叉比對 <code>SelectCPU</code>：有些操作看起來花了 <strong>4–12 ms</strong>，實際 Thread CPU Time 卻只有 <strong>4–48 µs</strong>。這反而提醒我們，問題可能是 Scheduler Thread 沒有及時取得 CPU，而不是單次 C 呼叫真的執行了好幾毫秒。</p>
+<h2 id="2">2. 優化效能之前，先把排程正確性修好</h2>
+<p>排查過程找到幾個會導致 Runnable Task Stall 的底層問題。</p>
+<h3 id="scheduler-thread-filtering">Scheduler Thread Filtering 不一致</h3>
+<p>移除 <code>GOMAXPROCS(1)</code> 後，多個 Go Runtime OS Thread 更容易同時執行。我們發現 BPF 的 <code>running</code>、<code>stopping</code> 與 <code>tick</code> Hook，對 Scheduler Thread 的排除條件不一致：有的只排除主要 Thread ID，有的卻排除整個 Process（TGID）。</p>
+<p>這讓 <code>nr_running</code> 的計數可能失衡，也可能產生不正確的 Watchdog 或 Preemption 行為。修正方式是讓相關 Hook 使用一致的識別條件。</p>
+<h3 id="task-dispatch">沒有成功移動 Task，卻提早從 Dispatch 返回</h3>
+<p>舊版 <code>ops.dispatch()</code> 看到 Scheduler 需要執行，就嘗試從 <code>SCHED_DSQ</code> 移動 Scheduler Thread，接著直接 Return。</p>
+<p>問題是這次 Move 不一定成功。若沒有真正搬出任何 Task，卻放棄繼續檢查其他 DSQ，就可能讓明明已經 Runnable 的 Task 繼續等待。</p>
+<h3 id="ring-buffer-publication-queue-counter-race-condition">Ring Buffer Publication 與 Queue Counter 的 Race Condition</h3>
+<p>原本入隊時的操作順序大致是：</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-0-1" id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="n">bpf_ringbuf_submit</span><span class="p">(</span><span class="n">task</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<a href="#__codelineno-0-2" id="__codelineno-0-2" name="__codelineno-0-2"></a><span class="n">__sync_fetch_and_add</span><span class="p">(</span><span class="o">&amp;</span><span class="n">nr_queued</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+</code></pre></div>
+<p>這個順序有一個競爭窗口：Go Consumer 可能已經讀到剛發布的任務，但 <code>nr_queued</code> 還沒增加，導致 Consumer 依據不一致的狀態判斷並遺失工作。</p>
+<p>因此我們將計數更新移到 Publication 之前：</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-1-1" id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="n">__sync_fetch_and_add</span><span class="p">(</span><span class="o">&amp;</span><span class="n">nr_queued</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<a href="#__codelineno-1-2" id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="n">bpf_ringbuf_submit</span><span class="p">(</span><span class="n">task</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</code></pre></div>
+<p>這個修改必須配合 Gthulhu 原本的 Producer/Consumer 計數協定理解，並非所有 Ring Buffer 都適用同一種做法。我們也加入 Regression Test，避免問題再次發生。</p>
+<h3 id="bpf-bpf">實際執行的 BPF，未必是剛剛修改的 BPF</h3>
+<p>除錯過程還發現 Makefile 產生的 BPF Skeleton 路徑，與 C Wrapper Include 的位置不同。加上獨立建置的 Static Library 與 Go Build Cache，可能造成明明更新原始碼，卻仍執行舊 BPF ELF 的狀況。</p>
+<p>修正 Build Pipeline 之後，才有辦法確認每次實驗測試的確實是最新程式碼。</p>
+<h2 id="3-adaptive_priority">3. 為什麼 <code>adaptive_priority</code> 過不了？</h2>
+<p><code>schtest adaptive_priority</code> 不是單純測量 Scheduler Throughput，而是在同一顆 Logical CPU 上安排兩種互相競爭的 Worker：</p>
+<ul>
+<li><strong>Fast Worker</strong>：Busy Spin 約 100 µs，接著 Sleep 約 9.9 ms，頻繁 Sleep/Wakeup；</li>
+<li><strong>Slow Worker</strong>：Busy Spin 約 10 ms，持續占用 CPU。</li>
+</ul>
+<p>測試比較兩者的 p90 Wakeup Latency：</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-2-1" id="__codelineno-2-1" name="__codelineno-2-1"></a>metric = p90(Fast wake latency) / p90(Slow wake latency)
+<a href="#__codelineno-2-2" id="__codelineno-2-2" name="__codelineno-2-2"></a>
+<a href="#__codelineno-2-3" id="__codelineno-2-3" name="__codelineno-2-3"></a>PASS: metric &lt; 0.50
+</code></pre></div>
+<p>分數越低，表示 Fast Worker 相對於 Slow Worker 更容易及時被排到 CPU。不過這個數字是<strong>相對喚醒延遲比例</strong>，既不是吞吐量，也不能直接轉換成應用程式的效能提升百分比。</p>
+<p>最初我們嘗試在 Go 裡辨識短任務：保存完整的 Previous CPU Burst，而非只看最後一段 Time Slice，並對符合條件的 Wakeup Task 給予 Deadline Bonus 與 Preemption Request。</p>
+<p>但 BPF 當時存在一個 100 µs 的 Preemption Guard。若正在執行的 Task 尚未跑滿 100 µs，這次 Preemption 可能被拒絕，且不會重新嘗試。Trace 中曾觀察到 Fast Worker 有 <strong>267 次</strong>喚醒遭到這個條件擋下。</p>
+<p>移除沒有 Retry 的保護門檻後，Metric 從 <strong>9.66</strong> 改善到約 <strong>0.88–0.95</strong>，卻還是無法通過測試。</p>
+<p>這時我們開始和 <code>scx_rustland</code> 比較，發現最後的差距其實不是 Priority Formula，而是底層排程交接。</p>
+<h2 id="4-handoff">4. 四項需要互相配合的 Handoff 最佳化</h2>
+<h3 id="41-pinned-scheduler-loop-ring-buffer">4.1 由 Pinned Scheduler Loop 直接消費 Ring Buffer</h3>
+<p>舊架構依賴 <code>libbpfgo</code> 的背景 Goroutine Poll Ring Buffer，再透過 Callback、資料複製與 Go Channel 把 Task 傳給 Scheduler Loop。</p>
+<p>現在改由固定 OS Thread 的 Scheduler Loop，透過非阻塞的 <code>ring_buffer__consume_n(..., 1)</code> Wrapper 直接讀取 Task，減少 Channel Handoff 與額外 Goroutine Wakeup。</p>
+<p>這個 Wrapper 只做非阻塞的 Ring Buffer 消費與有限的資料複製，才符合前面提到的 <code>asmcgocall</code> 使用限制。</p>
+<h3 id="42-bpf-drain-dispatch-decision">4.2 BPF 先 Drain 已完成的 Dispatch Decision</h3>
+<p>舊版 <code>ops.dispatch()</code> 可能先嘗試把 Go Scheduler Thread 排回 CPU，再處理 <code>dispatched</code> User Ring Buffer。</p>
+<p>於是就算 Go 已經完成決策，Kernel 仍可能讓 Scheduler 先跑下一輪，而不是讓剛選好的 Task 執行。</p>
+<p>新的順序是先呼叫 <code>bpf_user_ringbuf_drain()</code>，讓已完成的決策先進入排程流程，再考慮 Scheduler Thread 與其他 DSQ。</p>
+<p><strong>既然決策已經完成，就不應該先把決策者重新排回來。</strong></p>
+<h3 id="43-dispatch-yield-os-thread">4.3 完成 Dispatch 後，主動 Yield OS Thread</h3>
+<p>這部分特別容易被忽略：<strong>Go Scheduler 本身也是一個 Linux Runnable Thread</strong>。當 Scheduler 和 Application 在同一顆 CPU 上競爭時，即使 Go 已經把 Dispatch Decision 寫入 User Ring Buffer，只要它持續佔用 CPU，Application Task 仍可能無法及時執行。</p>
+<p>因此，在完成目前的排程批次、Task Pool 清空後，我們先呼叫 <code>NotifyComplete(0)</code>，再由 <code>YieldScheduler()</code> 讓目前的 OS Thread 進入 Linux <code>sched_yield</code> 流程：</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-3-1" id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="k">if</span><span class="w"> </span><span class="nx">poolCount</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-3-2" id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">core</span><span class="p">.</span><span class="nx">NotifyComplete</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-3-3" id="__codelineno-3-3" name="__codelineno-3-3"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">err</span>
+<a href="#__codelineno-3-4" id="__codelineno-3-4" name="__codelineno-3-4"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-3-5" id="__codelineno-3-5" name="__codelineno-3-5"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">bpfModule</span><span class="p">.</span><span class="nx">YieldScheduler</span><span class="p">();</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-3-6" id="__codelineno-3-6" name="__codelineno-3-6"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">err</span>
+<a href="#__codelineno-3-7" id="__codelineno-3-7" name="__codelineno-3-7"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-3-8" id="__codelineno-3-8" name="__codelineno-3-8"></a><span class="p">}</span>
+</code></pre></div>
+<p>這裡必須區分兩種 Yield：</p>
+<ul>
+<li><code>runtime.Gosched()</code>：讓其他 Go Goroutine 有機會執行，不等於要求 Linux 重新排程當前 OS Thread。</li>
+<li><code>sched_yield()</code>：讓目前的 Linux Thread 主動讓出 CPU 執行機會，讓 Kernel 有機會選擇其他 Runnable Task。</li>
+</ul>
+<p>但要注意：<code>sched_yield()</code> <strong>不保證下一個執行的就是 Fast Task</strong>，更不會直接替另一顆 CPU 發出 Reschedule Request。實際效果取決於 Linux Scheduling Policy、CPU Affinity、Runnable Queue 與 BPF Dispatch 路徑。</p>
+<p>這也是為什麼 Yield 不能單獨看待。實驗曾經只加入 Direct Ring Buffer 與 <code>sched_yield</code>，卻沒有先讓 BPF Drain 已完成的 Decision，結果 Metric 惡化到 <strong>24.48</strong>：Go 讓出 CPU 後，BPF 還可能優先把 Go 排回來，形成無效的往返。</p>
+<p>所以這項優化不是「每 Dispatch 一筆就 Yield」，而是<strong>先確保決策能被消費，完成批次之後，再適時把 CPU 交還給 Kernel</strong>。</p>
+<h3 id="44-user-space-scheduling-budget-bpf-backend-slice">4.4 分開 User-Space Scheduling Budget 與 BPF Backend Slice</h3>
+<p>原本 BPF 的 Default Slice 是 <strong>20 ms</strong>，連 Fallback Dispatch 或 Slice Replenishment 等情境都會沿用，可能放大重新檢查可執行工作的等待時間。</p>
+<p>現在讓 Go User Space 繼續使用 <strong>20 ms</strong> 的排程預算計算 Deadline / Vruntime，但將 BPF Backend Default Slice 調整為 <strong>1 ms</strong>。</p>
+<p>兩個設定處理的是不同層次的問題，不應該當成同一個 Time Slice。</p>
+<h2 id="5">5. 實驗結果：從失敗到通過</h2>
+<p>以下為同一台 Linux <code>6.14.0-37-generic</code>、4 Logical CPUs 測試環境中的 <code>schtest adaptive_priority</code> 紀錄。這是特定 Benchmark 的結果，並非跨硬體或所有 Workload 的效能保證。</p>
+<table>
+<thead>
+<tr>
+<th>Scheduler / 調整階段</th>
+<th style="text-align: right;">Metric</th>
+<th>結果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>原版 Gthulhu</td>
+<td style="text-align: right;">5.70–9.66</td>
+<td>未通過</td>
+</tr>
+<tr>
+<td>移除無 Retry 的 100 µs Guard，尚未重構 Handoff</td>
+<td style="text-align: right;">0.88–1.00</td>
+<td>未通過</td>
+</tr>
+<tr>
+<td>Direct Ring Buffer + Yield，未先 Drain</td>
+<td style="text-align: right;">24.48</td>
+<td>未通過</td>
+</tr>
+<tr>
+<td>最佳化 Gthulhu，<code>builtin_idle=false</code></td>
+<td style="text-align: right;">0.19、0.21、0.22</td>
+<td>通過</td>
+</tr>
+<tr>
+<td>最佳化 Gthulhu，<code>builtin_idle=true</code></td>
+<td style="text-align: right;">0.20（5s Batch：0.22）</td>
+<td>通過</td>
+</tr>
+<tr>
+<td><code>scx_rustland</code>，<code>builtin_idle=true</code></td>
+<td style="text-align: right;">0.16</td>
+<td>通過</td>
+</tr>
+</tbody>
+</table>
+<p>在對齊 <code>builtin_idle=true</code> 的測試條件後，Gthulhu 的 Fast Wakeup Distribution 中心值約為 <strong>13.4 µs</strong>，<code>scx_rustland</code> 則約為 <strong>11.2 µs</strong>。另外在 <code>schtest --filter fairness</code> 測試中，最佳化版本得到 <strong>0.98</strong>，高於通過門檻 <strong>0.60</strong>。</p>
+<p>至少在這個測試環境中，Gthulhu 的 Go User-Space Mode 已經能兼顧短任務的喚醒優先順序及 Fairness，而且不需要將排程決策全面移到 Kernel 或改用其他語言。</p>
+<p>當然，這並不等於 Gthulhu 已經在所有 Latency、Throughput 或 Production Workload 上和 <code>scx_rustland</code> 有相同表現。不同 Kernel、CPU Topology、Affinity、負載類型與 Scheduler Configuration 都可能改變結果。</p>
+<h2 id="6">6. 這次學到了什麼？</h2>
+<p>這次調校讓我們重新認識 User-Space Scheduler：它不是只有一段 Priority Algorithm，而是橫跨 <strong>BPF、Ring Buffer、Go Runtime、Linux Scheduling</strong> 的狀態機。</p>
+<p>有幾件事值得記下來：</p>
+<ol>
+<li><strong>Latency 不只有 CPU Execution Time。</strong> 同時量 Wall Time 與 Thread CPU Time，才能分辨計算成本和 Off-CPU Delay。</li>
+<li><strong>Queue Counter 和 Publication Order 是正確性問題。</strong> Race Condition 可能讓 Task 直接遺失，不只是慢一點而已。</li>
+<li><strong>已完成的 Decision 應該先被消費。</strong> 不然 Scheduler 可能一直把自己排回來，卻讓 Application Task 等待。</li>
+<li><strong>Scheduler 必須知道何時交還 CPU。</strong> 在特定 CPU Contention 情境下，適當的 <code>sched_yield</code> 能減少不必要的排程延遲。</li>
+<li><strong>Benchmark 必須說清楚量測什麼。</strong> Microbenchmark 的呼叫成本、<code>adaptive_priority</code> 的相對延遲比例，不能混同於應用程式整體效能。</li>
+</ol>
+<p>後續還需要在不同 Kernel、CPU Topology 與實際 Workload 上驗證這套調整，尤其值得比較 Shared CPU、Dedicated Scheduler CPU 與不同 Contention Level 下的 Tail Latency 與 Context Switch Cost。</p>
+<p>完整程式碼與量測紀錄：<a href="https://github.com/Gthulhu/Gthulhu/pull/156">Gthulhu PR #156</a> · <a href="https://github.com/Gthulhu/Gthulhu/blob/15bd5dd0c74c92c60574de7c03a021b538ce5124/SCHEDULER-OPTIMIZATION.md">Scheduler Optimization Report</a> · <a href="../how-it-works/">Gthulhu 運作原理</a></p>
+</article>
+</div>
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+</div>
+<button class="md-top md-icon" data-md-component="top" hidden="" type="button">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"></path></svg>
+  回到页面顶部
+</button>
+</main>
+<footer class="md-footer">
+<div class="md-footer-meta md-typeset">
+<div class="md-footer-meta__inner md-grid">
+<div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" rel="noopener" target="_blank">
+      Material for MkDocs
+    </a>
+</div>
+</div>
+</div>
+</footer>
+</div>
+<div class="md-dialog" data-md-component="dialog">
+<div class="md-dialog__inner md-typeset"></div>
+</div>
+<script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "search.highlight", "search.share", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}}</script>
+<script src="../../assets/javascripts/bundle.1e8ae164.min.js"></script>
+<script type="module">import mermaid from "https://unpkg.com/mermaid@10.4.0/dist/mermaid.esm.min.mjs";
+window.mermaidConfig = {default: {
+    startOnLoad: false
+}};</script></body>
+</html>
