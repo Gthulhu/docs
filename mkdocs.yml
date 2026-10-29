@@ -22,6 +22,7 @@ nav:
     - Claim2Core: claim2core.md
   - Blog:
     - All Posts: blog.md
+    - Fine-Tuning Gthulhu's Go User-Space Scheduler: userspace-scheduler-optimization.md
     - When Does CPU Scheduling Help AI Inference?: vllm-cpu-pressure.md
     - Hardening Gthulhu Network Security with Istio Ambient Mode: istio.md
     - Improving Network Performance with Custom eBPF-based Schedulers: https://free5gc.org/blog/20250726/index.en/
