@@ -12,12 +12,18 @@
 ## 建立 Gthulhu Docker 映像檔
 
 首先，取得 Gthluhu 專案的原始程式碼：
+<div markdown="1" data-trial-step="clone_source" data-setup-method="kubernetes">
+
 ```sh
 $ git clone --recursive https://github.com/Gthulhu/Gthulhu.git
 ```
 
+</div>
+
 接著，參考 [Gthulhu 安裝文件](https://gthulhu.github.io/docs/installation.en/) 完成 Gthulhu 的編譯。
 完成後，使用以下命令編譯並推送 Docker 映像檔到本地的 Microk8s registry：
+
+<div markdown="1" data-trial-step="build_images" data-setup-method="kubernetes">
 
 ```sh
 $ make image
@@ -28,20 +34,30 @@ $ docker push 127.0.0.1:32000/gthulhu-api:latest
 $ docker push 127.0.0.1:32000/gthulhu:latest
 ```
 
+</div>
+
 ## 部署 Gthulhu 到 Kubernetes
 
 接下來，使用以下命令將 Gthulhu 部署到 Kubernetes 叢集：
+
+<div markdown="1" data-trial-step="deploy_local_images" data-setup-method="kubernetes">
 
 ```sh
 $ cd chart/gthulhu
 $ helm install gthulhu . --set mtls.enabled=true --set-file mtls.ca.cert=certs/ca.crt --set-file mtls.dm.cert=certs/dm.crt --set-file mtls.dm.key=certs/dm.key --set-file mtls.manager.cert=certs/manager.crt --set-file mtls.manager.key=certs/manager.key
 ```
 
+</div>
+
 若要使用官方的 Gthulhu Docker 映像檔，而非本地編譯的版本，請執行：
+
+<div markdown="1" data-trial-step="deploy_official_images" data-setup-method="kubernetes">
 
 ```sh
 $ helm install gthulhu . -f ./values-production.yaml --set mtls.enabled=true --set-file mtls.ca.cert=certs/ca.crt --set-file mtls.dm.cert=certs/dm.crt --set-file mtls.dm.key=certs/dm.key --set-file mtls.manager.cert=certs/manager.crt --set-file mtls.manager.key=certs/manager.key
 ```
+
+</div>
 
 若沒有出現任何錯誤，使用以下命令理應可以看到 Gthulhu 的 Pod 已成功啟動：
 
@@ -114,3 +130,10 @@ NAME                       STRATEGY                   POD                       
 ```
 
 Gthulhu API Manager 利用 K8s 的 CRD 定義了 `schedulingstrategies.gthulhu.io` 與 `schedulingintents.gthulhu.io` 兩種資源，並且根據 `schedulingstrategies.gthulhu.io` 生成對應的 `schedulingintents.gthulhu.io`，使 Gthulhu Scheduler 能夠與 sidecar（Gthulhu decision maker）溝通，取得 Pod 背後對應的 PID(s) 與相關策略。
+
+
+## 分享試用結果
+
+[查看 Release](https://github.com/Gthulhu/Gthulhu/releases){ data-trial-resource="scheduler_releases" data-resource-type="release" }
+
+[分享你的測試結果或安裝問題](https://github.com/Gthulhu/Gthulhu/discussions){ data-trial-feedback="k8s" }：歡迎說明從哪裡得知 Gthulhu、想改善的 workload，以及是否成功執行或卡在哪一步。
