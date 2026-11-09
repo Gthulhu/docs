@@ -12,12 +12,18 @@ This document explains how to deploy the Gthulhu scheduler and API server in a K
 ## Building Gthulhu Docker Images
 
 First, obtain the Gthulhu project source code:
+<div markdown="1" data-trial-step="clone_source" data-setup-method="kubernetes">
+
 ```sh
 $ git clone --recursive https://github.com/Gthulhu/Gthulhu.git
 ```
 
+</div>
+
 Next, refer to the [Gthulhu Installation Guide](https://gthulhu.github.io/docs/installation.en/) to complete the Gthulhu compilation.
 After completion, use the following commands to build and push Docker images to the local Microk8s registry:
+
+<div markdown="1" data-trial-step="build_images" data-setup-method="kubernetes">
 
 ```sh
 $ make image
@@ -28,20 +34,30 @@ $ docker push 127.0.0.1:32000/gthulhu-api:latest
 $ docker push 127.0.0.1:32000/gthulhu:latest
 ```
 
+</div>
+
 ## Deploying Gthulhu to Kubernetes
 
 Next, use the following commands to deploy Gthulhu to the Kubernetes cluster:
+
+<div markdown="1" data-trial-step="deploy_local_images" data-setup-method="kubernetes">
 
 ```sh
 $ cd chart/gthulhu
 $ helm install gthulhu . --set mtls.enabled=true --set-file mtls.ca.cert=certs/ca.crt --set-file mtls.dm.cert=certs/dm.crt --set-file mtls.dm.key=certs/dm.key --set-file mtls.manager.cert=certs/manager.crt --set-file mtls.manager.key=certs/manager.key
 ```
 
+</div>
+
 To use the official Gthulhu Docker images instead of the locally built ones, run:
+
+<div markdown="1" data-trial-step="deploy_official_images" data-setup-method="kubernetes">
 
 ```sh
 $ helm install gthulhu . -f ./values-production.yaml --set mtls.enabled=true --set-file mtls.ca.cert=certs/ca.crt --set-file mtls.dm.cert=certs/dm.crt --set-file mtls.dm.key=certs/dm.key --set-file mtls.manager.cert=certs/manager.crt --set-file mtls.manager.key=certs/manager.key
 ```
+
+</div>
 
 If no errors occur, you should be able to see that the Gthulhu pods have started successfully:
 
@@ -114,3 +130,10 @@ NAME                       STRATEGY                   POD                       
 ```
 
 Gthulhu API Manager leverages K8s CRDs to define two types of resources: `schedulingstrategies.gthulhu.io` and `schedulingintents.gthulhu.io`. It generates corresponding `schedulingintents.gthulhu.io` resources based on `schedulingstrategies.gthulhu.io`, enabling the Gthulhu Scheduler to communicate with the sidecar (Gthulhu decision maker) to retrieve the PIDs associated with the pods and related policies.
+
+
+## Share your trial results
+
+[View releases](https://github.com/Gthulhu/Gthulhu/releases){ data-trial-resource="scheduler_releases" data-resource-type="release" }
+
+[Share your test results or setup questions](https://github.com/Gthulhu/Gthulhu/discussions){ data-trial-feedback="k8s" }. Tell us how you found Gthulhu, which workload you want to improve, and whether it ran successfully or where setup failed.
