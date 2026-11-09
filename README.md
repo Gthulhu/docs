@@ -66,6 +66,29 @@ The built site will be in the `site/` directory.
 
 ## 🚀 Deployment
 
+### Trial-intent analytics
+
+Selected setup code blocks on the English and Chinese installation/Kubernetes
+pages emit `install_command_copy` only after a successful copy. Release links
+emit `setup_resource_click`; feedback links emit `trial_feedback_open`.
+These events measure intent, not a completed installation. The handler reuses
+the existing Google tag and sends custom events only on `gthulhu.org`.
+
+In GA4, mark `install_command_copy` as a key event and select that event when
+comparing session key-event rates by **Session source / medium** and campaign.
+Register event-scoped dimensions for `step_id`, `setup_method`, `resource_id`,
+`resource_type`, `feedback_location`, and `doc_language` if parameter breakdowns
+are needed. Count sessions containing a copy, not the number of copy events.
+These GA4 administration settings must be applied separately after deployment.
+
+Use external UTM tags to distinguish placements (for example,
+`utm_source=github&utm_medium=referral&utm_campaign=free5gc_case&utm_content=readme`).
+Do not add campaign tags to internal links.
+
+Run the event-handler tests with `node --test tests/trial-intent.test.cjs`.
+After deployment, verify the three event types and their parameters in GA4
+DebugView. Clipboard permission failures must not emit a copy event.
+
 ### Using the Deploy Script
 
 We provide a convenient deployment script:
