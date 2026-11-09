@@ -124,6 +124,9 @@ markdown_extensions:
   - attr_list
   - md_in_html
 
+extra_javascript:
+  - javascripts/trial-intent.js
+
 extra_css:
   - stylesheets/extra.css
 
