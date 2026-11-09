@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="500" viewBox="0 0 760 500" role="img" aria-labelledby="title desc">
+  <title id="title">vLLM End-to-End TTFT Under CPU Pressure</title>
+  <desc id="desc">Bar chart comparing average end-to-end time to first token for default Linux scheduling, Gthulhu, and Gthulhu with workload policy.</desc>
+  <rect width="760" height="500" fill="white"/>
+  <text x="380" y="42" text-anchor="middle" font-family="sans-serif" font-size="24" font-weight="700">vLLM End-to-End TTFT Under CPU Pressure</text>
+  <text x="380" y="70" text-anchor="middle" font-family="sans-serif" font-size="14">DGX Spark / GB10 · lower is better</text>
+  <line x1="100" y1="410" x2="700" y2="410" stroke="#444"/>
+  <line x1="100" y1="100" x2="100" y2="410" stroke="#444"/>
+  <g font-family="sans-serif" font-size="12" fill="#444">
+    <text x="82" y="414" text-anchor="end">0</text>
+    <text x="82" y="370" text-anchor="end">50</text>
+    <text x="82" y="326" text-anchor="end">100</text>
+    <text x="82" y="282" text-anchor="end">150</text>
+    <text x="82" y="238" text-anchor="end">200</text>
+    <text x="82" y="194" text-anchor="end">250</text>
+    <text x="82" y="150" text-anchor="end">300</text>
+    <text x="82" y="106" text-anchor="end">350</text>
+  </g>
+  <g stroke="#ddd">
+    <line x1="100" y1="366" x2="700" y2="366"/>
+    <line x1="100" y1="322" x2="700" y2="322"/>
+    <line x1="100" y1="278" x2="700" y2="278"/>
+    <line x1="100" y1="234" x2="700" y2="234"/>
+    <line x1="100" y1="190" x2="700" y2="190"/>
+    <line x1="100" y1="146" x2="700" y2="146"/>
+    <line x1="100" y1="102" x2="700" y2="102"/>
+  </g>
+  <rect x="170" y="114" width="110" height="296" fill="#6c757d"/>
+  <rect x="325" y="299" width="110" height="111" fill="#4f7cac"/>
+  <rect x="480" y="261" width="110" height="149" fill="#2a9d8f"/>
+  <g font-family="sans-serif" font-size="14" text-anchor="middle">
+    <text x="225" y="103">336 ms</text><text x="380" y="288">126 ms</text><text x="535" y="250">169 ms</text>
+    <text x="225" y="440">Default + contention</text><text x="380" y="440">Gthulhu</text><text x="535" y="440">Gthulhu + policy</text>
+  </g>
+  <text x="30" y="255" transform="rotate(-90 30 255)" text-anchor="middle" font-family="sans-serif" font-size="14">milliseconds</text>
+</svg>
