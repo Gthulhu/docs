@@ -36,6 +36,8 @@ https://canonical.com/blog/canonical-releases-ubuntu-25-04-plucky-puffin
 
 #### Verify Kernel Support
 
+<div markdown="1" data-trial-step="verify_kernel" data-setup-method="bare_metal">
+
 ```bash
 # Check kernel version
 uname -r
@@ -47,6 +49,8 @@ cat /proc/config.gz | gunzip | grep "CONFIG_SCHED_CLASS_EXT"
 # Check BPF support
 grep -r "CONFIG_BPF" /boot/config-$(uname -r) | head -5
 ```
+
+</div>
 
 #### Install Dependencies
 
@@ -81,6 +85,8 @@ openSUSE Tumbleweed provides rolling updates and supports kernel 6.12+ with sche
 
 #### Verify Kernel Support
 
+<div markdown="1" data-trial-step="verify_kernel" data-setup-method="bare_metal">
+
 ```bash
 # Check kernel version
 uname -r
@@ -92,6 +98,8 @@ cat /proc/config.gz | gunzip | grep "CONFIG_SCHED_CLASS_EXT"
 # Check BPF support
 grep -r "CONFIG_BPF" /boot/config-$(uname -r) | head -5
 ```
+
+</div>
 
 #### Install Dependencies
 
@@ -129,6 +137,8 @@ done
 
 #### Verify Kernel Support
 
+<div markdown="1" data-trial-step="verify_kernel" data-setup-method="bare_metal">
+
 ```bash
 # Check kernel version (should be 6.12+)
 uname -r
@@ -139,6 +149,8 @@ zcat /proc/config.gz | grep "CONFIG_SCHED_CLASS_EXT"
 # Check BPF support
 zcat /proc/config.gz | grep "CONFIG_BPF" | head -5
 ```
+
+</div>
 
 Expected output should show:
 ```
@@ -227,6 +239,8 @@ source $HOME/.cargo/env
 
 After the prerequisites are installed, clone and build Gthulhu:
 
+<div markdown="1" data-trial-step="build_gthulhu" data-setup-method="bare_metal">
+
 ```bash
 # Clone repository
 git clone https://github.com/Gthulhu/Gthulhu.git
@@ -253,6 +267,8 @@ cd ..
 # Build Gthulhu
 make 
 ```
+
+</div>
 
 After compilation, Gthulhu should run successfully on your system:
 
@@ -282,3 +298,10 @@ After installation, you can:
 
 !!! success "Installation Complete"
     Congratulations! You have successfully installed the Gthulhu scheduler. If you encounter any issues, check the FAQ (faq.md) or open an issue on GitHub.
+
+
+## Share your trial results
+
+[View releases](https://github.com/Gthulhu/Gthulhu/releases){ data-trial-resource="scheduler_releases" data-resource-type="release" }
+
+[Share your test results or setup questions](https://github.com/Gthulhu/Gthulhu/discussions){ data-trial-feedback="installation" }. Tell us how you found Gthulhu, which workload you want to improve, and whether it ran successfully or where setup failed.
