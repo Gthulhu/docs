@@ -35,6 +35,8 @@
 
 #### 驗證核心支援
 
+<div markdown="1" data-trial-step="verify_kernel" data-setup-method="bare_metal">
+
 ```bash
 # 檢查核心版本
 uname -r
@@ -46,6 +48,8 @@ cat /proc/config.gz | gunzip | grep "CONFIG_SCHED_CLASS_EXT"
 # 檢查 BPF 支援
 grep -r "CONFIG_BPF" /boot/config-$(uname -r) | head -5
 ```
+
+</div>
 
 #### 安裝相依套件
 
@@ -80,6 +84,8 @@ openSUSE Tumbleweed 提供滾動更新，並支援 kernel 6.12+ 及 sched_ext。
 
 #### 驗證核心支援
 
+<div markdown="1" data-trial-step="verify_kernel" data-setup-method="bare_metal">
+
 ```bash
 # 檢查核心版本
 uname -r
@@ -91,6 +97,8 @@ cat /proc/config.gz | gunzip | grep "CONFIG_SCHED_CLASS_EXT"
 # 檢查 BPF 支援
 grep -r "CONFIG_BPF" /boot/config-$(uname -r) | head -5
 ```
+
+</div>
 
 #### 安裝相依套件
 
@@ -128,6 +136,8 @@ done
 
 #### 驗證核心支援
 
+<div markdown="1" data-trial-step="verify_kernel" data-setup-method="bare_metal">
+
 ```bash
 # 檢查核心版本（應為 6.12+）
 uname -r
@@ -138,6 +148,8 @@ zcat /proc/config.gz | grep "CONFIG_SCHED_CLASS_EXT"
 # 檢查 BPF 支援
 zcat /proc/config.gz | grep "CONFIG_BPF" | head -5
 ```
+
+</div>
 
 預期輸出應顯示：
 ```
@@ -226,6 +238,8 @@ source $HOME/.cargo/env
 
 安裝完必要套件後，複製並編譯 Gthulhu：
 
+<div markdown="1" data-trial-step="build_gthulhu" data-setup-method="bare_metal">
+
 ```bash
 git clone https://github.com/Gthulhu/Gthulhu.git
 cd Gthulhu
@@ -241,6 +255,8 @@ make
 cd ..
 make
 ```
+
+</div>
 ​
 編譯完成後，Gthulhu 理應能順利執行在你的系統上：
 ​
@@ -270,3 +286,10 @@ sudo update-alternatives --install /usr/bin/llvm-strip llvm-strip /usr/bin/llvm-
 
 !!! success "安裝完成"
     恭喜！您已成功安裝 Gthulhu 調度器。如果遇到任何問題，請查看 [常見問題](faq.md) 或在 GitHub 提交 Issue。
+
+
+## 分享試用結果
+
+[查看 Release](https://github.com/Gthulhu/Gthulhu/releases){ data-trial-resource="scheduler_releases" data-resource-type="release" }
+
+[分享你的測試結果或安裝問題](https://github.com/Gthulhu/Gthulhu/discussions){ data-trial-feedback="installation" }：歡迎說明從哪裡得知 Gthulhu、想改善的 workload，以及是否成功執行或卡在哪一步。
